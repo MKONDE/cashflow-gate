@@ -56,3 +56,17 @@ body{background:radial-gradient(ellipse at 50% -15%,#123823 0%,#07110c 42%,#0508
 footer{color:#829b8b}
 @media(min-width:760px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.hero{margin-top:24px}.markets{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.hero{padding:22px 18px}.hero h1{font-size:32px}.stats .card{padding:14px}.bottom{grid-template-columns:repeat(3,minmax(0,1fr))}.bottom a{font-size:10px}}
+
+/* Mobile usability fix: readable agricultural price table without horizontal clipping */
+@media(max-width:600px){
+ #price-board .tableWrap{overflow:visible}
+ #price-board .priceTable{width:100%;min-width:0;table-layout:fixed;font-size:11px}
+ #price-board .priceTable th,#price-board .priceTable td{white-space:normal;overflow-wrap:anywhere;word-break:normal;padding:10px 5px;line-height:1.45}
+ #price-board .priceTable th:nth-child(1),#price-board .priceTable td:nth-child(1){width:25%}
+ #price-board .priceTable th:nth-child(2),#price-board .priceTable td:nth-child(2){width:20%}
+ #price-board .priceTable th:nth-child(3),#price-board .priceTable td:nth-child(3){width:20%}
+ #price-board .priceTable th:nth-child(4),#price-board .priceTable td:nth-child(4){width:17%}
+ #price-board .priceTable th:nth-child(5),#price-board .priceTable td:nth-child(5){width:18%}
+ .bottom{padding-left:4px;padding-right:4px;gap:2px}
+ .bottom a{min-width:0;padding:8px 2px;font-size:10px}
+}
