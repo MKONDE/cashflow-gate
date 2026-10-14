@@ -19,3 +19,23 @@ document.querySelector("#plus").onclick=()=>{const e=document.querySelector("#am
 document.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{s.xp+=5;const answer="Practice prediction recorded: "+b.dataset.pick.toUpperCase()+". +5 demo XP. No real settlement or prize is active.";document.querySelector("#predictionMessage").textContent=answer;logEvent("Youth challenge · "+b.dataset.pick.toUpperCase()+" · +5 demo XP");stats();});
 document.querySelector("#reset").onclick=()=>{if(!confirm("Reset virtual balance, positions, XP and practice history on this device?"))return;Object.assign(s,freshState());message("Demo reset. Virtual balance restored; practice history cleared.");document.querySelector("#predictionMessage").textContent="Choose a prediction to record your practice answer.";stats();renderPositions();renderHistory();select(s.selected);};
 renderMarkets();select(s.selected);stats();renderPositions();renderHistory();
+
+// Additive Cashflow Gate V1 modules — demo only; no real-money functionality.
+function initRoiDemo(){
+ const principal=document.querySelector("#roiPrincipal"),term=document.querySelector("#roiTerm"),scenario=document.querySelector("#roiScenario");
+ const changeEl=document.querySelector("#roiChange"),endEl=document.querySelector("#roiEnd"),disclosure=document.querySelector("#roiDisclosure");
+ if(!principal||!term||!scenario||!changeEl||!endEl)return;
+ const money=n=>"TSh "+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+ function update(){
+  const amount=Number(principal.value),rate=Number(scenario.value);
+  if(!Number.isFinite(amount)||amount<0){changeEl.textContent="Enter a valid amount";endEl.textContent="—";return;}
+  const delta=amount*rate/100;
+  changeEl.textContent=(delta>0?"+":delta<0?"−":"")+money(Math.abs(delta));
+  changeEl.className=delta>0?"green":delta<0?"red":"";
+  endEl.textContent=money(amount+delta);
+  const duration=term.value==="custom"?"a custom duration":(["7","14","21"].includes(term.value)?term.value+" days":term.value+(term.value==="1"?" month":" months"));
+  disclosure.textContent="Illustrative "+rate.toFixed(2)+"% total scenario over "+duration+". This is not a forecast or promise. Actual results can be zero or negative; no real contract, account, deposit, payout or withdrawal is active.";
+ }
+ [principal,term,scenario].forEach(el=>{el.addEventListener("input",update);el.addEventListener("change",update);});update();
+}
+initRoiDemo();
