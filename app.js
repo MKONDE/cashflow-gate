@@ -23,19 +23,35 @@ renderMarkets();select(s.selected);stats();renderPositions();renderHistory();
 // Additive Cashflow Gate V1 modules — demo only; no real-money functionality.
 function initRoiDemo(){
  const principal=document.querySelector("#roiPrincipal"),term=document.querySelector("#roiTerm"),scenario=document.querySelector("#roiScenario");
+ const customWrap=document.querySelector("#roiCustomTermWrap"),customTerm=document.querySelector("#roiCustomTerm");
  const changeEl=document.querySelector("#roiChange"),endEl=document.querySelector("#roiEnd"),disclosure=document.querySelector("#roiDisclosure");
  if(!principal||!term||!scenario||!changeEl||!endEl)return;
  const money=n=>"TSh "+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
  function update(){
-  const amount=Number(principal.value),rate=Number(scenario.value);
-  if(!Number.isFinite(amount)||amount<0){changeEl.textContent="Enter a valid amount";endEl.textContent="—";return;}
+  const amount=Number(principal.value),rate=Number(scenario.value),isCustom=term.value==="custom";
+  if(customWrap)customWrap.hidden=!isCustom;
+  if(!Number.isFinite(amount)||amount<1000){
+   changeEl.textContent="Minimum demo amount: TSh 1,000";endEl.textContent="—";
+   disclosure.textContent="Enter a valid demo amount of at least TSh 1,000. This calculator does not accept or move real funds.";return;
+  }
+  let duration;
+  if(isCustom){
+   const months=Number(customTerm?.value);
+   if(!Number.isInteger(months)||months<13||months>120){
+    changeEl.textContent="Enter 13–120 months";endEl.textContent="—";
+    disclosure.textContent="Custom duration must be a whole number from 13 to 120 months. Simulation only.";return;
+   }
+   duration=months+" months";
+  }else{
+   duration=["7","14","21"].includes(term.value)?term.value+" days":term.value+(term.value==="1"?" month":" months");
+  }
   const delta=amount*rate/100;
   changeEl.textContent=(delta>0?"+":delta<0?"−":"")+money(Math.abs(delta));
   changeEl.className=delta>0?"green":delta<0?"red":"";
   endEl.textContent=money(amount+delta);
-  const duration=term.value==="custom"?"a custom duration":(["7","14","21"].includes(term.value)?term.value+" days":term.value+(term.value==="1"?" month":" months"));
   disclosure.textContent="Illustrative "+rate.toFixed(2)+"% total scenario over "+duration+". This is not a forecast or promise. Actual results can be zero or negative; no real contract, account, deposit, payout or withdrawal is active.";
  }
- [principal,term,scenario].forEach(el=>{el.addEventListener("input",update);el.addEventListener("change",update);});update();
+ [principal,term,scenario,customTerm].filter(Boolean).forEach(el=>{el.addEventListener("input",update);el.addEventListener("change",update);});
+ update();
 }
 initRoiDemo();
