@@ -66,3 +66,5 @@ jobs:
             echo "Running $test_file"
             psql -v ON_ERROR_STOP=1 -f "$test_file"
           done
+          echo "Running transactional Treasury integration tests"
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/cfg_treasury_transactional_integration_v1.sql
