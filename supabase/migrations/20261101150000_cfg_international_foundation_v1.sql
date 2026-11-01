@@ -293,6 +293,9 @@ declare
   already_approved_cfg numeric(30,8);
 begin
   if new.status = 'APPROVED' and (tg_op = 'INSERT' or old.status <> 'APPROVED') then
+    -- Serialize approvals so concurrent requests cannot over-allocate the same reserve.
+    perform 1 from public.cfg_platform_control where singleton_id = 1 for update;
+
     if new.required_reserve_usd < new.requested_cfg_amount then
       raise exception 'Required reserve must cover 100 percent of CFG at USD 1 reference value'
         using errcode = '23514';
