@@ -22,20 +22,28 @@ The live Supabase database already contains the Practice V1 schema and function 
 
 - Adds an additive SQL foundation for international country/currency configuration, country readiness evidence, exchange-rate snapshots, reserve asset evidence, dual-approval issuance requests, separate CFG and CFGG wallet tables, and ledger foundations.
 - Adds architecture documentation and a non-production SQL assertion test.
+- Adds a JWT-protected, read-only `cfg-treasury-read` Edge Function source and Treasury/Reserve dashboard source.
+- Adds server-managed `cfg_admin_roles`; dashboard access requires verified email plus an active, non-expired role.
 - All new financial tables enable RLS and revoke anon/authenticated access.
 - Wallets default to RESTRICTED; the global platform operational state defaults to DEVELOPMENT.
 - The foundation migration hard-disables global real-money enablement and does not implement any money movement API.
+- Country `LIVE_AUTHORIZED` transitions are guarded by 14 verified/current readiness checks and a distinct Controller/Super Admin authorization record.
+- Issuance request approval is guarded by dual approval, 100% reserve coverage of cumulative approved requests, and the 1 billion supply ceiling; approval is not issuance.
 
 ## Not implemented yet
 
 - CFG issuance or redemption execution.
 - Reserve attestation/reconciliation service and transactionally enforced reserve coverage.
 - Double-entry posting/balancing RPC and immutable ledger enforcement.
-- Trusted role administration and approval APIs.
-- Country readiness dashboard/API.
-- Treasury/Reserve dashboard UI.
+- Wallet APIs and payment adapters.
+- Ledger posting/balancing RPC and immutable ledger enforcement.
+- Trusted role assignment workflow and approval APIs.
+- Country-specific readiness write/verification API.
 - Multi-currency wallet API and payment adapters.
+- Deployment and end-to-end tests for the read-only API/dashboard.
 - Automated CI execution against an isolated database.
+
+The dashboard currently depends on the public Supabase config file introduced in PR #5. Merge/reconcile that authentication foundation before preview testing. Set `CFG_ALLOWED_ORIGINS` in Supabase Edge Function secrets before deploying the read API.
 
 These are deliberately separate increments. No production migration, deployment, merge, or live-money activation was performed.
 
