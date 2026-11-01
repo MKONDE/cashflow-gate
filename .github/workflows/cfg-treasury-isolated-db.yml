@@ -1,0 +1,68 @@
+name: CFG Treasury isolated migration checks
+
+on:
+  pull_request:
+    branches:
+      - feat/cfg-international-foundation-v1
+      - main
+  push:
+    branches:
+      - feat/cfg-treasury-engine-implementation-v1
+
+permissions:
+  contents: read
+
+jobs:
+  treasury-postgres-17:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cfg_treasury_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d cfg_treasury_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: cfg_treasury_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bootstrap disposable Supabase auth roles
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fixtures/cfg_treasury_auth_bootstrap.sql
+      - name: Apply Treasury migrations in dependency order
+        run: |
+          set -euo pipefail
+          for migration in \
+            supabase/migrations/20261101150000_cfg_international_foundation_v1.sql \
+            supabase/migrations/20261102100000_cfg_operational_state_compatibility_v1.sql \
+            supabase/migrations/20261102110000_cfg_ledger_integrity_v1.sql \
+            supabase/migrations/20261102120000_cfg_reserve_reconciliation_v1.sql \
+            supabase/migrations/20261102130000_cfg_issuance_supply_control_v1.sql \
+            supabase/migrations/20261102140000_cfg_treasury_security_audit_hardening_v1.sql
+          do
+            echo "Applying $migration"
+            psql -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Run Treasury catalog and privilege assertions
+        run: |
+          set -euo pipefail
+          for test_file in \
+            supabase/tests/cfg_treasury_operational_state_compatibility_v1.sql \
+            supabase/tests/cfg_ledger_integrity_v1.sql \
+            supabase/tests/cfg_reserve_reconciliation_v1.sql \
+            supabase/tests/cfg_issuance_supply_control_v1.sql \
+            supabase/tests/cfg_treasury_security_audit_hardening_v1.sql
+          do
+            echo "Running $test_file"
+            psql -v ON_ERROR_STOP=1 -f "$test_file"
+          done
