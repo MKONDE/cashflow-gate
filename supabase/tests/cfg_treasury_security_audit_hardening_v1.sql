@@ -1,6 +1,6 @@
 -- CFG Treasury Security & Audit Hardening V1 catalog/privilege assertions.
 -- Execute only in a disposable isolated DB after the full Treasury migration chain.
-do $
+do $audit$
 declare t text;
 begin
  foreach t in array array['cfg_platform_control','cfg_admin_roles','cfg_reserve_assets','cfg_issuance_requests','cfg_reserve_reconciliations','cfg_countries','cfg_country_readiness_checks','cfg_country_live_authorizations','cfg_ledger_transactions','cfg_ledger_entries'] loop
@@ -34,4 +34,4 @@ begin
  if has_function_privilege('authenticated','public.cfg_run_reserve_reconciliation(text,interval)','EXECUTE')
   or has_function_privilege('anon','public.cfg_run_reserve_reconciliation(text,interval)','EXECUTE') then
   raise exception 'Browser roles must not execute reconciliation'; end if;
-end $$;
+end $audit$;
