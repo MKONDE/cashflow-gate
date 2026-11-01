@@ -29,4 +29,10 @@ begin
      or has_table_privilege('anon','public.cfg_ledger_entries','select') then
     raise exception 'Financial ledger must not be exposed to browser roles';
   end if;
+  if not exists (select 1 from pg_trigger where tgname='cfg_country_live_authorization_guard' and not tgisinternal) then
+    raise exception 'Country LIVE_AUTHORIZED database guard is missing';
+  end if;
+  if not exists (select 1 from pg_trigger where tgname='cfg_issuance_approval_guard' and not tgisinternal) then
+    raise exception 'CFG issuance reserve/supply guard is missing';
+  end if;
 end $$;
