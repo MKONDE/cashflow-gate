@@ -110,8 +110,10 @@ declare
   account_class text;
   has_cfg boolean;
   has_cfgg boolean;
+  excluded_entry_id uuid;
 begin
   txid := case when tg_op='DELETE' then old.transaction_id else new.transaction_id end;
+  excluded_entry_id := case when tg_op='UPDATE' then old.id else null end;
   if tg_op='UPDATE' and new.transaction_id is distinct from old.transaction_id then
     raise exception 'Entry cannot be moved between transactions' using errcode='23514';
   end if;
@@ -135,7 +137,7 @@ begin
     into has_cfg,has_cfgg
   from public.cfg_ledger_entries e
   join public.cfg_ledger_accounts a on a.id=e.account_id
-  where e.transaction_id=txid and (tg_op <> 'UPDATE' or e.id <> old.id);
+  where e.transaction_id=txid and (excluded_entry_id is null or e.id <> excluded_entry_id);
 
   if (account_class='CUSTOMER_CFG' and has_cfgg)
      or (account_class='CUSTOMER_CFGG' and has_cfg) then
