@@ -3,6 +3,7 @@
 ## Added controls
 - Append-only `cfg_treasury_audit_events` table with row-level before/after JSON snapshots for changes to platform control, admin roles, reserve assets, issuance requests and reconciliation records.
 - Audit events capture the database JWT subject and JWT role when present. A missing actor claim remains NULL; it is not guessed.
+- The read-only Treasury Edge Function exposes only audit event metadata (not before/after JSON payloads), and the dashboard displays the latest 100 events.
 - Audit events cannot be updated or deleted through normal SQL operations. Browser roles have no access; service_role has SELECT only.
 - Reserve assets cannot be physically deleted. Evidence can be retained and marked EXPIRED or REJECTED.
 - Reserve reconciliation snapshots reject UPDATE and DELETE.
