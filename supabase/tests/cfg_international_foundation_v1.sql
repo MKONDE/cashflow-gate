@@ -25,6 +25,13 @@ begin
   if not (select relrowsecurity from pg_class where oid='public.cfgg_wallets'::regclass) then
     raise exception 'CFGG wallet RLS must be enabled';
   end if;
+  if not (select relrowsecurity from pg_class where oid='public.cfg_admin_roles'::regclass) then
+    raise exception 'Treasury role registry RLS must be enabled';
+  end if;
+  if has_table_privilege('authenticated','public.cfg_admin_roles','select')
+     or has_table_privilege('anon','public.cfg_admin_roles','select') then
+    raise exception 'Treasury role registry must not be exposed to browser roles';
+  end if;
   if has_table_privilege('authenticated','public.cfg_ledger_entries','select')
      or has_table_privilege('anon','public.cfg_ledger_entries','select') then
     raise exception 'Financial ledger must not be exposed to browser roles';
