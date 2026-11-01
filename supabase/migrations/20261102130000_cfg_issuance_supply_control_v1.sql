@@ -20,6 +20,7 @@ declare
  v_reserve numeric(38,8);
  v_encumbered numeric(38,8);
  v_outstanding numeric(30,8);
+ v_issued_total numeric(30,8);
  v_already_reserved numeric(38,8);
  v_ceiling numeric(30,8);
  v_fresh_count bigint;
@@ -55,7 +56,7 @@ begin
 
   select authorized_supply_ceiling into strict v_ceiling
   from public.cfg_platform_control where singleton_id=1;
-  select outstanding_supply into strict v_outstanding
+  select issued_total,outstanding_supply into strict v_issued_total,v_outstanding
   from public.cfg_supply_position where singleton_id=1;
 
   if new.required_reserve_usd < new.requested_cfg_amount then
@@ -83,8 +84,8 @@ begin
     using errcode='23514';
   end if;
 
-  if v_outstanding + v_already_reserved + new.requested_cfg_amount > v_ceiling then
-   raise exception 'Approval blocked: issuance would exceed authorized supply ceiling'
+  if v_issued_total + v_already_reserved + new.requested_cfg_amount > v_ceiling then
+   raise exception 'Approval blocked: cumulative issued supply plus reservations would exceed authorized supply ceiling'
     using errcode='23514';
   end if;
 
