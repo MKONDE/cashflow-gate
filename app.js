@@ -11,8 +11,18 @@ function select(id){s.selected=id;const m=get(id);document.querySelector("#selec
 function stats(){document.querySelector("#balance").innerHTML=fmt(s.balance)+' <small>VPT</small>';const pnl=s.positions.reduce((n,p)=>n+p.units*(get(p.market).price-p.entry),0),el=document.querySelector("#pnl");el.innerHTML=(pnl>=0?"+":"")+fmt(pnl)+' <small>VPT</small>';el.className=pnl>=0?"green":"red";document.querySelector("#openCount").textContent=s.positions.length+" open positions";document.querySelector("#xp").textContent=s.xp+" XP";save();}
 function renderPositions(){const root=document.querySelector("#positions");root.innerHTML="";document.querySelector("#empty").style.display=s.positions.length?"none":"block";s.positions.forEach(p=>{const m=get(p.market),pnl=p.units*(m.price-p.entry),row=document.createElement("div");row.className="position";row.innerHTML='<div><b>'+m.name+' · Virtual Buy</b><small>'+p.units.toFixed(5)+' units @ '+fmt(p.entry)+'</small></div><div style="text-align:right"><b class="'+(pnl>=0?"green":"red")+'">'+(pnl>=0?"+":"")+fmt(pnl)+' VPT</b><button data-close="'+p.id+'">Close position</button></div>';root.appendChild(row);});root.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>close(b.dataset.close));}
 function message(t){document.querySelector("#tradeMessage").textContent=t;}
-function buy(){const amount=Number(document.querySelector("#amount").value),m=get(s.selected);if(!Number.isFinite(amount)||amount<=0){message("Enter a valid practice amount.");return;}if(amount>s.balance){message("Insufficient virtual balance. Reduce the amount.");return;}s.balance-=amount;s.positions.push({id:Date.now().toString()+Math.random().toString(16).slice(2),market:m.id,entry:m.price,units:amount/m.price,cost:amount});logEvent("Practice Buy · "+m.name+" · "+fmt(amount)+" VPT");message("Virtual Buy recorded for "+m.name+". No real order was sent.");stats();renderPositions();}
-function close(id){const i=s.positions.findIndex(p=>p.id===id);if(i<0)return;const p=s.positions[i],m=get(p.market),proceeds=p.units*m.price,pnl=proceeds-p.cost;s.balance+=proceeds;s.xp+=pnl>=0?10:2;s.positions.splice(i,1);logEvent("Position closed · "+m.name+" · "+(pnl>=0?"+":"")+fmt(pnl)+" VPT simulated P/L");message("Practice position closed: "+(pnl>=0?"+":"")+fmt(pnl)+" VPT. Simulation only.");stats();renderPositions();}
+async function buy(){const amount=Number(document.querySelector("#amount").value),m=get(s.selected);if(!Number.isFinite(amount)||amount<=0){message("Enter a valid practice amount.");return;}if(amount>s.balance){message("Insufficient virtual balance. Reduce the amount.");return;}let serverPositionId=null;
+if(window.CFG_AUTH?.session){
+ try{const saved=await window.CFG_AUTH.recordTrade({action:"buy",market_symbol:m.symbol,price:m.price,virtual_units:amount/m.price,idempotency_key:crypto.randomUUID()});serverPositionId=saved.position_id;}
+ catch(error){message(error.message||"Could not save practice trade.");return;}
+}
+s.balance-=amount;s.positions.push({id:serverPositionId||Date.now().toString()+Math.random().toString(16).slice(2),market:m.id,entry:m.price,units:amount/m.price,cost:amount});logEvent("Practice Buy · "+m.name+" · "+fmt(amount)+" VPT");message("Virtual Buy recorded for "+m.name+". No real order was sent.");stats();renderPositions();}
+async function close(id){const i=s.positions.findIndex(p=>p.id===id);if(i<0)return;const p=s.positions[i],m=get(p.market),proceeds=p.units*m.price,pnl=proceeds-p.cost;
+if(window.CFG_AUTH?.session){
+ try{await window.CFG_AUTH.recordTrade({action:"close",market_symbol:m.symbol,price:m.price,virtual_units:p.units,position_id:p.id,idempotency_key:crypto.randomUUID()});}
+ catch(error){message(error.message||"Could not close server practice position.");return;}
+}
+s.balance+=proceeds;s.xp+=pnl>=0?10:2;s.positions.splice(i,1);logEvent("Position closed · "+m.name+" · "+(pnl>=0?"+":"")+fmt(pnl)+" VPT simulated P/L");message("Practice position closed: "+(pnl>=0?"+":"")+fmt(pnl)+" VPT. Simulation only.");stats();renderPositions();}
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x===b));renderMarkets(b.dataset.filter);});
 document.querySelector("#buy").onclick=buy;document.querySelector("#sell").onclick=()=>{const p=[...s.positions].reverse().find(p=>p.market===s.selected);if(!p){message("No open practice position for this market. Use Practice Buy first.");return;}close(p.id);};
 document.querySelector("#plus").onclick=()=>{const e=document.querySelector("#amount");e.value=Math.min(10000,(Number(e.value)||0)+100);};document.querySelector("#minus").onclick=()=>{const e=document.querySelector("#amount");e.value=Math.max(1,(Number(e.value)||0)-100);};
@@ -39,3 +49,30 @@ function initRoiDemo(){
  [principal,term,scenario].forEach(el=>{el.addEventListener("input",update);el.addEventListener("change",update);});update();
 }
 initRoiDemo();
+
+/* Authenticated server history hydration. Device-only demo state remains available when signed out. */
+document.addEventListener("cfg-auth-change", async (event) => {
+  const session = event.detail?.session;
+  if (!session || !window.CFG_AUTH?.ready) return;
+  try {
+    const saved = await window.CFG_AUTH.loadPractice();
+    if (!saved) return;
+    s.positions = saved.positions.filter(p => p.status === "open").map(p => ({
+      id: p.id,
+      market: (markets.find(m => m.symbol === p.market_symbol) || markets[0]).id,
+      entry: Number(p.entry_price),
+      units: Number(p.virtual_units),
+      cost: Number(p.virtual_cost)
+    }));
+    s.history = saved.events.map(e => ({
+      id: e.id,
+      time: new Date(e.created_at).toLocaleString(),
+      text: e.event_type.replaceAll("_", " ") + " · " + (e.market_symbol || "Practice") +
+        (e.simulated_pnl == null ? "" : " · " + fmt(Number(e.simulated_pnl)) + " VPT P/L")
+    }));
+    stats(); renderPositions(); renderHistory();
+    message("Your server-backed practice positions are loaded.");
+  } catch (error) {
+    message("Could not load account history: " + (error.message || "Please retry."));
+  }
+});
