@@ -1,7 +1,13 @@
 -- CFG Treasury Security & Audit Hardening V1 catalog/privilege assertions.
 -- Execute only in a disposable isolated DB after the full Treasury migration chain.
-do $$
+do $
+declare t text;
 begin
+ foreach t in array array['cfg_platform_control','cfg_admin_roles','cfg_reserve_assets','cfg_issuance_requests','cfg_reserve_reconciliations','cfg_countries','cfg_country_readiness_checks','cfg_country_live_authorizations','cfg_ledger_transactions','cfg_ledger_entries'] loop
+  if not exists(select 1 from pg_trigger where tgrelid=to_regclass('public.'||t) and tgname=t||'_audit_event' and not tgisinternal) then
+   raise exception 'Missing audit trigger on %',t;
+  end if;
+ end loop;
  if to_regclass('public.cfg_treasury_audit_events') is null then raise exception 'Missing Treasury audit event table'; end if;
  if not exists(select 1 from pg_trigger where tgname='cfg_treasury_audit_append_only' and not tgisinternal) then raise exception 'Audit append-only trigger missing'; end if;
  if not exists(select 1 from pg_trigger where tgname='cfg_reserve_reconciliation_append_only' and not tgisinternal) then raise exception 'Reconciliation append-only trigger missing'; end if;
@@ -16,6 +22,10 @@ begin
   raise exception 'Service role must not directly mutate reconciliation snapshots'; end if;
  if not has_table_privilege('service_role','public.cfg_treasury_audit_events','SELECT') then
   raise exception 'Service role should have read-only audit access'; end if;
+ if has_table_privilege('service_role','public.cfg_treasury_audit_events','INSERT')
+  or has_table_privilege('service_role','public.cfg_treasury_audit_events','UPDATE')
+  or has_table_privilege('service_role','public.cfg_treasury_audit_events','DELETE') then
+  raise exception 'Service role must not directly mutate audit events'; end if;
  if has_table_privilege('authenticated','public.cfg_treasury_audit_events','SELECT')
   or has_table_privilege('anon','public.cfg_treasury_audit_events','SELECT') then
   raise exception 'Browser roles must not read Treasury audit events'; end if;
