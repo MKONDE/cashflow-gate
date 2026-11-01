@@ -32,6 +32,17 @@ insert into public.cfg_currencies(currency_code,currency_name,minor_unit_digits)
 values ('USD','US Dollar',2),('TZS','Tanzanian Shilling',2)
 on conflict (currency_code) do nothing;
 
+-- Administrative roles are assigned only through a controlled server/database process.
+-- Never derive financial permissions from user-editable auth metadata.
+create table if not exists public.cfg_admin_roles (
+  user_id uuid primary key references auth.users(id) on delete restrict,
+  role_name text not null check (role_name in ('SUPER_ADMIN','FINANCIAL_CONTROLLER','TREASURY_VIEWER')),
+  is_active boolean not null default false,
+  assigned_by uuid references auth.users(id) on delete restrict,
+  assigned_at timestamptz not null default now(),
+  expires_at timestamptz
+);
+
 create table if not exists public.cfg_countries (
   country_code char(2) primary key,
   country_name text not null,
@@ -213,7 +224,7 @@ do $$
 declare t text;
 begin
   foreach t in array array[
-    'cfg_platform_control','cfg_currencies','cfg_countries','cfg_country_readiness_checks',
+    'cfg_platform_control','cfg_currencies','cfg_admin_roles','cfg_countries','cfg_country_readiness_checks',
     'cfg_country_live_authorizations','cfg_exchange_rate_snapshots','cfg_reserve_assets',
     'cfg_issuance_requests','cfg_wallets','cfgg_wallets','cfg_ledger_accounts',
     'cfg_ledger_transactions','cfg_ledger_entries'
