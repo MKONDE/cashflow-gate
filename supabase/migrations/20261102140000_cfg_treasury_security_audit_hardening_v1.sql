@@ -75,7 +75,9 @@ declare t text;
 begin
  foreach t in array array[
   'cfg_platform_control','cfg_admin_roles','cfg_reserve_assets',
-  'cfg_issuance_requests','cfg_reserve_reconciliations'
+  'cfg_issuance_requests','cfg_reserve_reconciliations','cfg_countries',
+  'cfg_country_readiness_checks','cfg_country_live_authorizations',
+  'cfg_ledger_transactions','cfg_ledger_entries'
  ] loop
   execute format('drop trigger if exists %I on public.%I',t||'_audit_event',t);
   execute format(
