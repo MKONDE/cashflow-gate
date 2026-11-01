@@ -13,13 +13,13 @@ function renderPositions(){const root=document.querySelector("#positions");root.
 function message(t){document.querySelector("#tradeMessage").textContent=t;}
 async function buy(){const amount=Number(document.querySelector("#amount").value),m=get(s.selected);if(!Number.isFinite(amount)||amount<=0){message("Enter a valid practice amount.");return;}if(amount>s.balance){message("Insufficient virtual balance. Reduce the amount.");return;}let serverPositionId=null;
 if(window.CFG_AUTH?.session){
- try{const saved=await window.CFG_AUTH.recordTrade({action:"buy",market_symbol:m.symbol,price:m.price,virtual_units:amount/m.price,idempotency_key:crypto.randomUUID()});serverPositionId=saved.position_id;}
+ try{const saved=await window.CFG_AUTH.recordTrade({action:"buy",market_symbol:m.symbol.replaceAll("/","-"),price:m.price,virtual_units:amount/m.price,idempotency_key:crypto.randomUUID()});serverPositionId=saved.position_id;}
  catch(error){message(error.message||"Could not save practice trade.");return;}
 }
 s.balance-=amount;s.positions.push({id:serverPositionId||Date.now().toString()+Math.random().toString(16).slice(2),market:m.id,entry:m.price,units:amount/m.price,cost:amount});logEvent("Practice Buy · "+m.name+" · "+fmt(amount)+" VPT");message("Virtual Buy recorded for "+m.name+". No real order was sent.");stats();renderPositions();}
 async function close(id){const i=s.positions.findIndex(p=>p.id===id);if(i<0)return;const p=s.positions[i],m=get(p.market),proceeds=p.units*m.price,pnl=proceeds-p.cost;
 if(window.CFG_AUTH?.session){
- try{await window.CFG_AUTH.recordTrade({action:"close",market_symbol:m.symbol,price:m.price,virtual_units:p.units,position_id:p.id,idempotency_key:crypto.randomUUID()});}
+ try{await window.CFG_AUTH.recordTrade({action:"close",market_symbol:m.symbol.replaceAll("/","-"),price:m.price,virtual_units:p.units,position_id:p.id,idempotency_key:crypto.randomUUID()});}
  catch(error){message(error.message||"Could not close server practice position.");return;}
 }
 s.balance+=proceeds;s.xp+=pnl>=0?10:2;s.positions.splice(i,1);logEvent("Position closed · "+m.name+" · "+(pnl>=0?"+":"")+fmt(pnl)+" VPT simulated P/L");message("Practice position closed: "+(pnl>=0?"+":"")+fmt(pnl)+" VPT. Simulation only.");stats();renderPositions();}
@@ -27,7 +27,7 @@ document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySel
 document.querySelector("#buy").onclick=buy;document.querySelector("#sell").onclick=()=>{const p=[...s.positions].reverse().find(p=>p.market===s.selected);if(!p){message("No open practice position for this market. Use Practice Buy first.");return;}close(p.id);};
 document.querySelector("#plus").onclick=()=>{const e=document.querySelector("#amount");e.value=Math.min(10000,(Number(e.value)||0)+100);};document.querySelector("#minus").onclick=()=>{const e=document.querySelector("#amount");e.value=Math.max(1,(Number(e.value)||0)-100);};
 document.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{s.xp+=5;const answer="Practice prediction recorded: "+b.dataset.pick.toUpperCase()+". +5 demo XP. No real settlement or prize is active.";document.querySelector("#predictionMessage").textContent=answer;logEvent("Youth challenge · "+b.dataset.pick.toUpperCase()+" · +5 demo XP");stats();});
-document.querySelector("#reset").onclick=()=>{if(!confirm("Reset virtual balance, positions, XP and practice history on this device?"))return;Object.assign(s,freshState());message("Demo reset. Virtual balance restored; practice history cleared.");document.querySelector("#predictionMessage").textContent="Choose a prediction to record your practice answer.";stats();renderPositions();renderHistory();select(s.selected);};
+document.querySelector("#reset").onclick=()=>{if(window.CFG_AUTH?.session){message("For signed-in accounts, server practice history is retained. Sign out to reset this device-only demo.");return;}if(!confirm("Reset virtual balance, positions, XP and practice history on this device?"))return;Object.assign(s,freshState());message("Demo reset. Virtual balance restored; practice history cleared.");document.querySelector("#predictionMessage").textContent="Choose a prediction to record your practice answer.";stats();renderPositions();renderHistory();select(s.selected);};
 renderMarkets();select(s.selected);stats();renderPositions();renderHistory();
 
 // Additive Cashflow Gate V1 modules — demo only; no real-money functionality.
@@ -59,7 +59,7 @@ document.addEventListener("cfg-auth-change", async (event) => {
     if (!saved) return;
     s.positions = saved.positions.filter(p => p.status === "open").map(p => ({
       id: p.id,
-      market: (markets.find(m => m.symbol === p.market_symbol) || markets[0]).id,
+      market: (markets.find(m => m.symbol.replaceAll("/","-") === p.market_symbol) || markets[0]).id,
       entry: Number(p.entry_price),
       units: Number(p.virtual_units),
       cost: Number(p.virtual_cost)
