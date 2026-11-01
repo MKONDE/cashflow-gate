@@ -15,7 +15,7 @@ The CI bootstrap creates only the minimum Supabase-compatible roles and `auth.us
 5. `20261102130000_cfg_issuance_supply_control_v1.sql`
 6. `20261102140000_cfg_treasury_security_audit_hardening_v1.sql`
 
-The workflow then runs the five Treasury SQL catalog/privilege assertion files in `supabase/tests/`.
+The workflow runs the five Treasury SQL catalog/privilege assertion files and the transactional integration test `supabase/tests/cfg_treasury_transactional_integration_v1.sql`.
 
 ## Schema cross-check
 
@@ -25,26 +25,28 @@ The reserve migration creates the supply and reconciliation fields referenced by
 
 This is a source-level schema cross-check only. PostgreSQL execution is still required to establish that all DDL, triggers, grants, function bodies and assertions are valid together.
 
-## What this first CI slice proves
+## Transactional integration coverage added
 
-- The six migration files can be applied in the declared dependency order to a clean PostgreSQL 17 database.
-- The existing SQL catalog assertions pass after migration.
-- The test database is disposable and isolated from the connected Supabase project.
+The new disposable-database test seeds synthetic auth identities and synthetic fixtures, then checks:
 
-## What it does not yet prove
+- Eligible company reserve is counted while `SYNTHETIC_TEST` reserve is excluded.
+- Distinct active Financial Controller and Super Admin approvals complete the request workflow.
+- Same-person dual approval is rejected.
+- Approval does not mint CFG or change supply counters; execution remains hard-disabled.
+- Balanced reserve-reconciliation journals post idempotently.
+- Posted transaction and entry rows are immutable.
+- Unbalanced journals remain DRAFT after posting is rejected.
+- Ordinary deposit posting remains blocked outside `LIVE_AUTHORIZED`.
+- Treasury audit events are written.
 
-- End-to-end transactional behavior for balanced/unbalanced ledger posting, idempotency, immutable posted journals, and CFG/CFGG domain separation.
-- Dual-approval happy path and rejection paths with real seeded auth users and reserve evidence.
-- Concurrent issuance approval serialization, reserve encumbrance edge cases, or the 1 billion lifetime issuance ceiling under concurrent requests.
-- Behavior under the actual Supabase Auth/PostgREST/Edge Runtime stack.
-- Independent tamper resistance against database owner or migration-owner compromise.
-
-These require a second integration-test slice using seeded synthetic identities and synthetic evidence in this disposable database. Synthetic assets must never be treated as real reserve backing.
+This is an initial transactional slice, not exhaustive coverage. It does not yet prove concurrent approval serialization, the lifetime supply ceiling under concurrency, all CFG/CFGG domain separation paths, real Supabase Auth/PostgREST/Edge behavior, or independent tamper resistance against database-owner compromise.
 
 ## Current execution status
 
-The workflow definition and bootstrap fixture are committed to the Treasury implementation branch. At the time of this document update, no completed GitHub Actions run has been observed, so the migration chain is **not yet marked as passed**. Do not merge PR #7 or apply any Treasury migration to the connected Supabase database based on the presence of this harness alone.
+The first clean PostgreSQL 17 migration-chain run passed: all six migrations and all five catalog/privilege assertion files completed successfully in GitHub Actions run `41363782567`. A transactional test file and workflow step have now been committed; their new CI result is pending. The connected Supabase project has not been touched.
+
+Do not merge PR #7 or apply any Treasury migration to the connected Supabase database based on the first migration pass alone.
 
 ## Next gate
 
-Wait for the GitHub Actions run. If it fails, fix the first concrete migration or assertion failure and rerun the same disposable job. Only after a clean migration pass should transactional integration tests be added. No paid Supabase branch is needed for this first test stage.
+Review the new transactional test run. If it fails, fix the first concrete failure and rerun the disposable job. No paid Supabase branch is needed for this stage.
