@@ -4,7 +4,6 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const allowedOrigins = (Deno.env.get("CFG_ALLOWED_ORIGINS") ?? "")
   .split(",").map((value) => value.trim()).filter(Boolean);
 
-import { sumNumeric8 } from "../_shared/decimal.ts";
 function response(status: number, payload: Record<string, unknown>, origin?: string | null) {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
