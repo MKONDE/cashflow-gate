@@ -20,6 +20,6 @@ This migration does not add payment, deposit, withdrawal, issuance, redemption, 
 
 ## Tests
 
-`supabase/tests/cfg_ledger_integrity_v1.sql` contains rollback-wrapped integration assertions for balanced posting, idempotent retries, immutable posted entries, rejection of unbalanced journals, and blocking issuance before live authorization.
+`supabase/tests/cfg_ledger_integrity_v1.sql` contains database-catalog assertions for the posting function, both guard triggers, and least-privilege execution grants. Transactional behavior still requires integration testing in a disposable isolated database.
 
 These tests are authored for an isolated disposable database and have not yet been executed. Do not apply this migration to the connected production database.
