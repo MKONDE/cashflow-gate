@@ -230,3 +230,107 @@ comment on table public.cfg_platform_control is
 comment on table public.cfg_wallets is 'CFG customer wallet domain. Never combine with CFGG.';
 comment on table public.cfgg_wallets is 'CFGG customer wallet domain. Never combine with CFG.';
 comment on table public.cfg_ledger_entries is 'Append-only double-entry ledger foundation; write APIs and balancing enforcement are a separate gated implementation step.';
+
+
+-- Database-level country launch gate. LIVE_AUTHORIZED requires all current readiness
+-- evidence and two distinct approvers. This is a technical gate, not legal advice.
+create or replace function public.cfg_guard_country_live_authorization()
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $$
+declare
+  verified_count integer;
+  authorization_exists boolean;
+begin
+  if new.operational_state = 'LIVE_AUTHORIZED' or new.real_money_enabled then
+    select count(*) into verified_count
+    from public.cfg_country_readiness_checks
+    where country_code = new.country_code
+      and status = 'VERIFIED'
+      and verified_by is not null
+      and verified_at is not null
+      and (expires_at is null or expires_at > now());
+
+    if verified_count <> 14 then
+      raise exception 'Country cannot be LIVE_AUTHORIZED: all 14 readiness checks must be verified and current'
+        using errcode = '23514';
+    end if;
+
+    select exists (
+      select 1 from public.cfg_country_live_authorizations a
+      where a.country_code = new.country_code
+        and a.financial_controller_id <> a.super_admin_id
+        and (a.expires_at is null or a.expires_at > now())
+    ) into authorization_exists;
+
+    if not authorization_exists then
+      raise exception 'Country cannot be LIVE_AUTHORIZED without distinct Financial Controller and Super Admin authorization'
+        using errcode = '23514';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists cfg_country_live_authorization_guard on public.cfg_countries;
+create trigger cfg_country_live_authorization_guard
+before insert or update of operational_state, real_money_enabled
+on public.cfg_countries
+for each row execute function public.cfg_guard_country_live_authorization();
+
+-- Issuance requests cannot reach APPROVED unless the request itself is fully
+-- reserve-covered, cumulative approved requests remain within verified reserves,
+-- and cumulative approved issuance requests remain below the authorized ceiling.
+create or replace function public.cfg_guard_issuance_approval()
+returns trigger
+language plpgsql
+set search_path = public, pg_temp
+as $$
+declare
+  verified_reserve_usd numeric(30,8);
+  already_reserved_usd numeric(30,8);
+  already_approved_cfg numeric(30,8);
+begin
+  if new.status = 'APPROVED' and (tg_op = 'INSERT' or old.status <> 'APPROVED') then
+    if new.required_reserve_usd < new.requested_cfg_amount then
+      raise exception 'Required reserve must cover 100 percent of CFG at USD 1 reference value'
+        using errcode = '23514';
+    end if;
+
+    select coalesce(sum(verified_usd_value),0) into verified_reserve_usd
+    from public.cfg_reserve_assets
+    where verification_status = 'VERIFIED'
+      and reserve_eligible = true
+      and funding_source in ('COMPANY_CAPITAL','OPERATING_SURPLUS')
+      and (verified_at is not null);
+
+    select coalesce(sum(required_reserve_usd),0),
+           coalesce(sum(requested_cfg_amount),0)
+      into already_reserved_usd, already_approved_cfg
+    from public.cfg_issuance_requests
+    where status = 'APPROVED'
+      and id <> new.id;
+
+    if verified_reserve_usd < already_reserved_usd + new.required_reserve_usd then
+      raise exception 'Issuance approval blocked: verified eligible reserves do not cover cumulative approved requests'
+        using errcode = '23514';
+    end if;
+
+    if already_approved_cfg + new.requested_cfg_amount > 1000000000 then
+      raise exception 'Issuance approval blocked: authorized CFG supply ceiling would be exceeded'
+        using errcode = '23514';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists cfg_issuance_approval_guard on public.cfg_issuance_requests;
+create trigger cfg_issuance_approval_guard
+before insert or update of status, requested_cfg_amount, required_reserve_usd
+on public.cfg_issuance_requests
+for each row execute function public.cfg_guard_issuance_approval();
+
+revoke all on function public.cfg_guard_country_live_authorization() from public, anon, authenticated;
+revoke all on function public.cfg_guard_issuance_approval() from public, anon, authenticated;
