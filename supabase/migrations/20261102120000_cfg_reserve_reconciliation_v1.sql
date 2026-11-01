@@ -9,6 +9,12 @@ alter table public.cfg_reserve_assets
  add column if not exists evidence_valid_until timestamptz,
  add column if not exists encumbered_usd_value numeric(30,8) not null default 0,
  add column if not exists verification_reference text;
+
+-- Legacy VERIFIED rows lack the new provenance fields; fail closed until re-verified.
+update public.cfg_reserve_assets
+ set verification_status='PENDING', reserve_eligible=false
+ where verification_status='VERIFIED'
+   and (evidence_observed_at is null or verification_reference is null);
 alter table public.cfg_reserve_assets
  add constraint cfg_reserve_assets_encumbrance_nonnegative check (encumbered_usd_value >= 0),
  add constraint cfg_reserve_assets_encumbrance_within_value check (verified_usd_value is null or encumbered_usd_value <= verified_usd_value),
