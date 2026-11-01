@@ -4,6 +4,27 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const allowedOrigins = (Deno.env.get("CFG_ALLOWED_ORIGINS") ?? "")
   .split(",").map((value) => value.trim()).filter(Boolean);
 
+// PostgreSQL NUMERIC values are handled as decimal strings. Never convert money or
+// supply quantities to JavaScript Number (IEEE-754) for aggregation.
+function sumNumeric8(values: Array<string | number | null | undefined>): string {
+  const total = values.reduce((sum, raw) => {
+    const value = String(raw ?? "0");
+    if (!/^-?\d+(\.\d{1,8})?$/.test(value)) {
+      throw new Error("Invalid NUMERIC(30,8) value returned by database");
+    }
+    const negative = value.startsWith("-");
+    const unsigned = negative ? value.slice(1) : value;
+    const [whole, fraction = ""] = unsigned.split(".");
+    const scaled = BigInt(whole) * 100000000n + BigInt((fraction + "00000000").slice(0, 8));
+    return sum + (negative ? -scaled : scaled);
+  }, 0n);
+  const negative = total < 0n;
+  const absolute = negative ? -total : total;
+  const whole = absolute / 100000000n;
+  const fraction = (absolute % 100000000n).toString().padStart(8, "0");
+  return `${negative ? "-" : ""}${whole.toString()}.${fraction}`;
+}
+
 function response(status: number, payload: Record<string, unknown>, origin?: string | null) {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -85,24 +106,25 @@ Deno.serve(async (req: Request) => {
     return response(503, { error: "Treasury data is unavailable; check migration status" }, origin);
   }
 
-  const verifiedReserveUsd = (reserveResult.data ?? []).reduce((sum, asset) => {
-    const current = !asset.verified_at || new Date(asset.verified_at).getTime() <= Date.now();
-    const eligible = asset.verification_status === "VERIFIED" && asset.reserve_eligible === true &&
+  const now = Date.now();
+  const eligibleReserveAssets = (reserveResult.data ?? []).filter((asset) => {
+    const current = !asset.verified_at || new Date(asset.verified_at).getTime() <= now;
+    return asset.verification_status === "VERIFIED" && asset.reserve_eligible === true &&
       ["COMPANY_CAPITAL", "OPERATING_SURPLUS"].includes(asset.funding_source) && current;
-    return sum + (eligible ? Number(asset.verified_usd_value ?? 0) : 0);
-  }, 0);
+  });
+  const verifiedReserveUsd = sumNumeric8(eligibleReserveAssets.map((asset) => asset.verified_usd_value));
 
   const issuance = issuanceResult.data ?? [];
-  const approvedCfgRequests = issuance.filter((item) => item.status === "APPROVED")
-    .reduce((sum, item) => sum + Number(item.requested_cfg_amount), 0);
-  const pendingCfgRequests = issuance.filter((item) =>
+  const approvedCfgRequests = sumNumeric8(issuance.filter((item) => item.status === "APPROVED")
+    .map((item) => item.requested_cfg_amount));
+  const pendingCfgRequests = sumNumeric8(issuance.filter((item) =>
     ["DRAFT", "PENDING_CONTROLLER", "PENDING_SUPER_ADMIN"].includes(item.status))
-    .reduce((sum, item) => sum + Number(item.requested_cfg_amount), 0);
+    .map((item) => item.requested_cfg_amount));
 
   const countries = (countriesResult.data ?? []).map((country) => {
     const checks = (readinessResult.data ?? []).filter((item) => item.country_code === country.country_code);
     const verified = checks.filter((item) => item.status === "VERIFIED" &&
-      (!item.expires_at || new Date(item.expires_at).getTime() > Date.now())).length;
+      (!item.expires_at || new Date(item.expires_at).getTime() > now)).length;
     return {
       country_code: country.country_code,
       country_name: country.country_name,
@@ -120,9 +142,7 @@ Deno.serve(async (req: Request) => {
     platform: controlResult.data,
     reserve: {
       verified_eligible_reserve_usd: verifiedReserveUsd,
-      verified_asset_count: (reserveResult.data ?? []).filter((asset) =>
-        asset.verification_status === "VERIFIED" && asset.reserve_eligible === true &&
-        ["COMPANY_CAPITAL", "OPERATING_SURPLUS"].includes(asset.funding_source)).length,
+      verified_asset_count: eligibleReserveAssets.length,
     },
     issuance: {
       approved_request_cfg_total: approvedCfgRequests,
