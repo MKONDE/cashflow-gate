@@ -47,6 +47,25 @@ begin
     raise exception 'Reserve reconciliation did not exclude synthetic assets; status %, gross %',v_status,v_total;
   end if;
 
+  -- A future-dated verification must be excluded and flagged as insufficient evidence.
+  insert into public.cfg_reserve_assets(
+    asset_type,funding_source,reserve_eligible,institution_name,asset_reference,
+    currency_code,face_value,verified_usd_value,verification_status,verified_by,
+    verified_at,evidence_reference,evidence_observed_at,verification_reference
+  ) values (
+    'BANK_CASH','COMPANY_CAPITAL',true,'CI future-date bank','CI-FUTURE-VERIFICATION-001',
+    'USD',500,500,'VERIFIED',v_fc,now()+interval '1 day',
+    'CI-FUTURE-EVIDENCE-001',now(),'CI-FUTURE-VERIFY-001'
+  );
+  v_recon := public.cfg_run_reserve_reconciliation('CI-RESERVE-TEST-0002',interval '7 days');
+  select status,reserve_gross_usd,stale_asset_count
+    into v_status,v_total,v_asset_count
+    from public.cfg_reserve_reconciliations where id=v_recon;
+  if v_status <> 'INSUFFICIENT_EVIDENCE' or v_total <> 250 or v_asset_count <> 1 then
+    raise exception 'Future-dated verification was not excluded and flagged; status %, gross %, stale %',
+      v_status,v_total,v_asset_count;
+  end if;
+
   -- Dual approval must be from two distinct, correctly assigned active people.
   v_request := public.cfg_create_issuance_request('CI-ISSUANCE-TEST-0001',50,v_fc);
   perform public.cfg_submit_issuance_controller_approval(v_request,v_fc,v_recon);
