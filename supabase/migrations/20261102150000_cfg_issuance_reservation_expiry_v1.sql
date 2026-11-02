@@ -56,6 +56,9 @@ begin
  if new.status not in ('DRAFT','PENDING_CONTROLLER','PENDING_SUPER_ADMIN','APPROVED','EXPIRED','REJECTED','CANCELLED') then
   raise exception 'Unsupported issuance request state' using errcode='23514';
  end if;
+ if new.status='EXPIRED' then
+  raise exception 'Only an elapsed APPROVED reservation may transition to EXPIRED' using errcode='23514';
+ end if;
 
  if new.status='APPROVED' and old.status<>'APPROVED' then
   perform pg_advisory_xact_lock(hashtext('cfg-issuance-approval-v1'));
