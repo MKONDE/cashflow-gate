@@ -10,7 +10,7 @@ Reconcile eligible net reserve assets against outstanding CFG at the fixed USD 1
 - Count only verified BANK_CASH, BANK_DEPOSIT and SHORT_TERM_GOVERNMENT_SECURITY.
 - Count only COMPANY_CAPITAL and OPERATING_SURPLUS.
 - Exclude CUSTOMER_INVESTMENT, THIRD_PARTY_FUNDS and SYNTHETIC_TEST. Synthetic assets are constrained to reserve_eligible=false.
-- Require verification provenance and evidence observation timestamp. Existing legacy VERIFIED rows without the new provenance are reset to PENDING/non-eligible on migration, so they must be re-verified before counting.
+- Require verification provenance and evidence observation timestamp. Both verification and evidence-observation timestamps must not be future-dated. Future-dated verification evidence is excluded from eligible reserves and classified as insufficient evidence. Existing legacy VERIFIED rows without the new provenance are reset to PENDING/non-eligible on migration, so they must be re-verified before counting.
 - Default evidence freshness is seven days; function accepts up to 30 days maximum.
 - Expired evidence is excluded.
 - Encumbrances are deducted from gross verified reserves.
