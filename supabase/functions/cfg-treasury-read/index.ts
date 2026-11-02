@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { sumNumeric8 } from "../_shared/decimal.ts";
+import { scopeTreasuryReadPayload, sumNumeric8 } from "../_shared/decimal.ts";
 
 const allowedOrigins = (Deno.env.get("CFG_ALLOWED_ORIGINS") ?? "").split(",").map((v) => v.trim()).filter(Boolean);
 function subtractNumeric8(left: string, right: string): string {
@@ -13,26 +13,6 @@ function subtractNumeric8(left: string, right: string): string {
   };
   const n = toUnits(left) - toUnits(right), neg = n < 0n, a = neg ? -n : n;
   return `${neg ? "-" : ""}${a / 100000000n}.${(a % 100000000n).toString().padStart(8, "0")}`;
-}
-
-function scopeTreasuryReadPayload(role: string, source: Record<string, any>) {
-  const payload = structuredClone(source);
-  if (role === "TREASURY_VIEWER") {
-    payload.issuance = {
-      approved_request_cfg_total: payload.issuance?.approved_request_cfg_total ?? "0",
-      pending_request_cfg_total: payload.issuance?.pending_request_cfg_total ?? "0",
-      note: "Aggregate issuance totals only; individual requests are restricted."
-    };
-    delete payload.audit_events;
-  } else if (role === "FINANCIAL_CONTROLLER") {
-    payload.audit_events = (payload.audit_events ?? []).map((event: Record<string, unknown>) => {
-      const { actor_user_id: _actor, entity_id: _entity, ...safe } = event;
-      return safe;
-    });
-  } else if (role !== "SUPER_ADMIN") {
-    throw new Error("Treasury role is not recognized");
-  }
-  return payload;
 }
 
 function response(status: number, payload: Record<string, unknown>, origin?: string | null) {
