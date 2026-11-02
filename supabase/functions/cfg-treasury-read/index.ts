@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { sumNumeric8 } from "../_shared/decimal.ts";
+import { scopeTreasuryReadPayload } from "../_shared/treasury-access.ts";
 
 const allowedOrigins = (Deno.env.get("CFG_ALLOWED_ORIGINS") ?? "").split(",").map((v) => v.trim()).filter(Boolean);
 function subtractNumeric8(left: string, right: string): string {
@@ -40,6 +41,7 @@ Deno.serve(async (req: Request) => {
   const {data:role,error:roleError}=await admin.from("cfg_admin_roles").select("role_name,is_active,expires_at").eq("user_id",user.id).maybeSingle();
   if (roleError) return response(503,{error:"Treasury authorization lookup failed"},origin);
   if (!role?.is_active||(role.expires_at&&new Date(role.expires_at).getTime()<=Date.now())) return response(403,{error:"Treasury dashboard access is not authorized"},origin);
+  if (!["SUPER_ADMIN","FINANCIAL_CONTROLLER","TREASURY_VIEWER"].includes(role.role_name)) return response(403,{error:"Treasury role is not recognized"},origin);
   const [control,reserves,requests,countries,readiness,supply,reconciliations,auditEvents]=await Promise.all([
     admin.from("cfg_platform_control").select("operational_state,authorized_supply_ceiling,reference_value_usd,required_reserve_ratio,real_money_enabled").eq("singleton_id",1).single(),
     admin.from("cfg_reserve_assets").select("verified_usd_value,verification_status,reserve_eligible,funding_source,asset_type,verified_at,evidence_observed_at,evidence_valid_until,encumbered_usd_value"),
@@ -63,12 +65,13 @@ Deno.serve(async (req: Request) => {
     const verified=checks.filter(x=>x.status==="VERIFIED"&&(!x.expires_at||new Date(x.expires_at).getTime()>now)).length;
     return {...c,verified_checks:verified,total_checks:14};
   });
-  return response(200,{
+  const payload={
     generated_at:new Date().toISOString(),viewer_role:role.role_name,platform:control.data,
     reserve:{verified_eligible_reserve_usd:reserveGross,encumbered_usd:reserveEncumbered,net_eligible_reserve_usd:subtractNumeric8(reserveGross,reserveEncumbered),verified_asset_count:eligible.length,evidence_window_days:7},
     supply:supply.data??{issued_total:"0",outstanding_supply:"0",redeemed_total:"0",encumbered_supply:"0",updated_at:null},
     issuance:{approved_request_cfg_total:approved,pending_request_cfg_total:pending,requests:issuance,note:"Approved requests are not issued CFG. Issuance execution remains disabled."},
     latest_reconciliation:(reconciliations.data??[])[0]??null,countries:countryRows,audit_events:auditEvents.data??[],
     safety:{real_money_apis_enabled:false,customer_deposits_enabled:false,withdrawals_enabled:false,cfg_issuance_enabled:false,redemptions_enabled:false,investment_payouts_enabled:false,custody_enabled:false,payment_integrations_enabled:false}
-  },origin);
+  };
+  return response(200,scopeTreasuryReadPayload(role.role_name,payload),origin);
 });
