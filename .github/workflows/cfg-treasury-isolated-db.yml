@@ -45,6 +45,10 @@ jobs:
         run: deno test supabase/functions/cfg-treasury-read/index_test.ts
       - name: Type-check Treasury read Edge Function
         run: deno check supabase/functions/cfg-treasury-read/index.ts
+      - name: Test CFG issuance action validation
+        run: deno test supabase/functions/cfg-issuance-action/index_test.ts
+      - name: Type-check CFG issuance action Edge Function
+        run: deno check supabase/functions/cfg-issuance-action/index.ts
       - name: Bootstrap disposable Supabase auth roles
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fixtures/cfg_treasury_auth_bootstrap.sql
       - name: Apply Treasury migrations in dependency order
