@@ -66,6 +66,20 @@
       <article class="metric"><span>Approved issuance requests</span><strong id="approvedRequests">—</strong></article>
       <article class="metric"><span>Pending issuance requests</span><strong id="pendingRequests">—</strong></article>
     </div>
+    <section class="admin-card"><h2>CFG supply position</h2><div class="admin-grid">
+      <article class="metric"><span>Cumulative issued</span><strong id="issuedTotal">—</strong></article>
+      <article class="metric"><span>Outstanding CFG</span><strong id="outstandingSupply">—</strong></article>
+      <article class="metric"><span>Redeemed total</span><strong id="redeemedTotal">—</strong></article>
+      <article class="metric"><span>Encumbered CFG</span><strong id="encumberedSupply">—</strong></article>
+    </div><p id="supplyUpdated" class="admin-msg"></p></section>
+    <section class="admin-card"><h2>Reserve reconciliation · latest snapshot</h2><div class="admin-grid">
+      <article class="metric"><span>Reconciliation status</span><strong id="reconStatus">—</strong></article>
+      <article class="metric"><span>Net eligible reserve</span><strong id="reconNet">—</strong></article>
+      <article class="metric"><span>CFG covered</span><strong id="reconOutstanding">—</strong></article>
+      <article class="metric"><span>Stale evidence items</span><strong id="reconStale">—</strong></article>
+    </div><p id="reconUpdated" class="admin-msg"></p></section>
+    <section class="admin-card"><h2>Recent issuance approvals · last 50</h2><div class="table-scroll"><table class="admin-table"><thead><tr><th>Reference</th><th>Requested CFG</th><th>Status</th><th>Controller approval</th><th>Super Admin approval</th><th>Expiry</th></tr></thead><tbody id="issuanceRows"></tbody></table></div><p class="admin-msg">Read-only audit view. No approval, rejection, issuance or balance-editing controls are provided.</p></section>
+    <section class="admin-card"><h2>Recent Treasury audit events · last 100</h2><div class="table-scroll"><table class="admin-table"><thead><tr><th>Time</th><th>Record type</th><th>Record ID</th><th>Action</th><th>Actor</th><th>Database role</th></tr></thead><tbody id="auditRows"></tbody></table></div><p class="admin-msg">Metadata-only view. Before/after record contents remain restricted to the database audit store.</p></section>
     <section class="admin-card"><h2>Country readiness</h2><div class="table-scroll"><table class="admin-table"><thead><tr><th>Country</th><th>Currency</th><th>Operational state</th><th>Verified checks</th><th>Real money</th></tr></thead><tbody id="countryRows"></tbody></table></div></section>
     <p id="updatedAt" class="admin-msg"></p>
   </section>
