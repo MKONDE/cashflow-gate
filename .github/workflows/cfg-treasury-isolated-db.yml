@@ -37,6 +37,14 @@ jobs:
       PGDATABASE: cfg_treasury_test
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Test Treasury Edge Function helpers
+        run: deno test supabase/functions/cfg-treasury-read/index_test.ts
+      - name: Type-check Treasury read Edge Function
+        run: deno check supabase/functions/cfg-treasury-read/index.ts
       - name: Bootstrap disposable Supabase auth roles
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fixtures/cfg_treasury_auth_bootstrap.sql
       - name: Apply Treasury migrations in dependency order
