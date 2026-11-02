@@ -1,4 +1,4 @@
-import { sumNumeric8 } from "./decimal.ts";
+import { sumNumeric8 } from "../_shared/decimal.ts";
 
 Deno.test("sums NUMERIC(30,8) without IEEE-754 precision loss", () => {
   const result = sumNumeric8([
