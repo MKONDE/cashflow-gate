@@ -56,7 +56,8 @@ jobs:
             supabase/migrations/20261102110000_cfg_ledger_integrity_v1.sql \
             supabase/migrations/20261102120000_cfg_reserve_reconciliation_v1.sql \
             supabase/migrations/20261102130000_cfg_issuance_supply_control_v1.sql \
-            supabase/migrations/20261102140000_cfg_treasury_security_audit_hardening_v1.sql
+            supabase/migrations/20261102140000_cfg_treasury_security_audit_hardening_v1.sql \
+            supabase/migrations/20261102150000_cfg_issuance_reservation_expiry_v1.sql
           do
             echo "Applying $migration"
             psql -v ON_ERROR_STOP=1 -f "$migration"
