@@ -69,7 +69,7 @@ begin
   where verification_status='VERIFIED' and reserve_eligible=true
    and funding_source in ('COMPANY_CAPITAL','OPERATING_SURPLUS')
    and asset_type in ('BANK_CASH','BANK_DEPOSIT','SHORT_TERM_GOVERNMENT_SECURITY')
-   and verified_at is not null
+   and verified_at is not null and verified_at<=now()
    and evidence_observed_at>=now()-interval '7 days'
    and evidence_observed_at<=now()
    and (evidence_valid_until is null or evidence_valid_until>now());
