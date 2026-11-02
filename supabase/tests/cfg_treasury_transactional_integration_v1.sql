@@ -13,6 +13,9 @@ declare
   v_account_credit uuid;
   v_total numeric(30,8);
   v_status text;
+  v_asset_count integer;
+  v_pass_recon uuid;
+  v_expiry_count integer;
 begin
   insert into auth.users(id,email) values
     (v_fc,'cfg-fc-test@example.invalid'),
@@ -41,6 +44,7 @@ begin
   );
 
   v_recon := public.cfg_run_reserve_reconciliation('CI-RESERVE-TEST-0001',interval '7 days');
+  v_pass_recon := v_recon;
   select status,reserve_gross_usd into v_status,v_total
     from public.cfg_reserve_reconciliations where id=v_recon;
   if v_status <> 'PASS' or v_total <> 250 then
@@ -68,7 +72,7 @@ begin
 
   -- Dual approval must be from two distinct, correctly assigned active people.
   v_request := public.cfg_create_issuance_request('CI-ISSUANCE-TEST-0001',50,v_fc);
-  perform public.cfg_submit_issuance_controller_approval(v_request,v_fc,v_recon);
+  perform public.cfg_submit_issuance_controller_approval(v_request,v_fc,v_pass_recon);
   perform public.cfg_submit_issuance_super_admin_approval(v_request,v_sa);
   if not exists(select 1 from public.cfg_issuance_requests
     where id=v_request and status='APPROVED'
@@ -78,6 +82,35 @@ begin
   end if;
   if (select issued_total from public.cfg_supply_position where singleton_id=1) <> 0 then
     raise exception 'Approval must not issue CFG or change supply counters';
+  end if;
+
+  -- Simulate an elapsed approved reservation in the disposable test DB.
+  perform set_config('session_replication_role','replica',true);
+  insert into public.cfg_issuance_requests(
+    request_reference,requested_cfg_amount,required_reserve_usd,status,
+    financial_controller_id,financial_controller_approved_at,
+    super_admin_id,super_admin_approved_at,created_by,
+    approved_reserve_reconciliation_id,approval_expires_at
+  ) values (
+    'CI-ISSUANCE-EXPIRED-0001',100,100,'APPROVED',
+    v_fc,now()-interval '2 days',v_sa,now()-interval '2 days',v_fc,
+    v_pass_recon,now()-interval '1 minute'
+  );
+  perform set_config('session_replication_role','origin',true);
+  v_expiry_count := public.cfg_expire_issuance_requests();
+  if v_expiry_count <> 1 or not exists(
+    select 1 from public.cfg_issuance_requests
+    where request_reference='CI-ISSUANCE-EXPIRED-0001' and status='EXPIRED'
+  ) then
+    raise exception 'Elapsed approved reservation was not transitioned to EXPIRED; count %',v_expiry_count;
+  end if;
+
+  -- Expired reservations no longer consume reserve capacity: 50 + 190 <= 250.
+  v_request := public.cfg_create_issuance_request('CI-ISSUANCE-TEST-0003',190,v_fc);
+  perform public.cfg_submit_issuance_controller_approval(v_request,v_fc,v_pass_recon);
+  perform public.cfg_submit_issuance_super_admin_approval(v_request,v_sa);
+  if not exists(select 1 from public.cfg_issuance_requests where id=v_request and status='APPROVED') then
+    raise exception 'Expired reservation continued to consume reserve capacity';
   end if;
 
   -- Same-person dual approval is rejected.
