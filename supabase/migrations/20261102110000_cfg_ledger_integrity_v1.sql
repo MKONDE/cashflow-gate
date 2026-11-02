@@ -107,7 +107,7 @@ declare
   txid uuid;
   tx_status text;
   account_currency char(3);
-  account_class text;
+  v_account_class text;
   has_cfg boolean;
   has_cfgg boolean;
   excluded_entry_id uuid;
@@ -125,8 +125,9 @@ begin
   end if;
   if tg_op='DELETE' then return old; end if;
 
-  select currency_code,account_class into account_currency,account_class
-  from public.cfg_ledger_accounts where id=new.account_id;
+  select a.currency_code,a.account_class into account_currency,v_account_class
+  from public.cfg_ledger_accounts a
+  where a.id=new.account_id;
   if not found then raise exception 'Ledger account not found' using errcode='23503'; end if;
   if account_currency <> new.currency_code then
     raise exception 'Entry currency must match account currency' using errcode='23514';
@@ -139,8 +140,8 @@ begin
   join public.cfg_ledger_accounts a on a.id=e.account_id
   where e.transaction_id=txid and (excluded_entry_id is null or e.id <> excluded_entry_id);
 
-  if (account_class='CUSTOMER_CFG' and has_cfgg)
-     or (account_class='CUSTOMER_CFGG' and has_cfg) then
+  if (v_account_class='CUSTOMER_CFG' and has_cfgg)
+     or (v_account_class='CUSTOMER_CFGG' and has_cfg) then
     raise exception 'CFG and CFGG ledger domains must remain separate' using errcode='23514';
   end if;
   return new;
