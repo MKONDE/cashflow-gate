@@ -13,4 +13,10 @@ begin
  end if;
  if not exists(select 1 from pg_constraint where conrelid='public.cfg_reserve_assets'::regclass
   and conname='cfg_reserve_assets_synthetic_never_eligible') then raise exception 'Synthetic reserve guard missing'; end if;
+ if position('verified_at<=now()' in pg_get_functiondef('public.cfg_run_reserve_reconciliation(text,interval)'::regprocedure))=0 then
+  raise exception 'Future-dated verification timestamps must be excluded from eligible reserves';
+ end if;
+ if position('verified_at>now()' in pg_get_functiondef('public.cfg_run_reserve_reconciliation(text,interval)'::regprocedure))=0 then
+  raise exception 'Future-dated verification timestamps must be classified as insufficient evidence';
+ end if;
 end $$;
