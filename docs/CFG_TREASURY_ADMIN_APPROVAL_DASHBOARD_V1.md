@@ -20,6 +20,9 @@ A restricted, authenticated, read-only operations view for Treasury staff. This 
 5. Up to 50 newest issuance requests, with status, requested amount, two approval timestamps and approval expiry.
 6. Country readiness summary.
 
+## Role-based least privilege
+The Edge Function applies role-specific response shaping on the server after validating the active database role. Hiding dashboard panels in browser JavaScript is not used as an authorization boundary. The underlying reads remain server-side and the service-role key is never exposed.
+
 ## Precision
 Financial and CFG aggregates are summed in the Edge Function using fixed-scale BigInt arithmetic. No JavaScript floating-point conversion is used for monetary or supply totals. The browser formats database decimal strings without converting them to Number.
 
@@ -40,7 +43,10 @@ Financial and CFG aggregates are summed in the Edge Function using fixed-scale B
 - Unauthenticated visitor sees sign-in only.
 - Unconfirmed email is denied.
 - User without an active Treasury role is denied.
-- Active Treasury Viewer, Financial Controller and Super Admin see only the read-only panels.
+- `TREASURY_VIEWER` receives platform/reserve/supply/reconciliation/country summaries and aggregate issuance counts only; no individual issuance requests or audit events.
+- `FINANCIAL_CONTROLLER` receives read-only summaries and issuance request records; audit events are redacted to remove actor user IDs and entity IDs.
+- `SUPER_ADMIN` receives the full read-only dashboard and audit metadata.
+- Unknown role values are denied even if an active role row exists.
 - Expired role is denied.
 - API rejects non-GET methods and non-allow-listed origins.
 - All totals remain exact for large NUMERIC values.
