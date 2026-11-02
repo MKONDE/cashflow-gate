@@ -91,25 +91,25 @@ begin
   coalesce(sum(verified_usd_value) filter(where verification_status='VERIFIED' and reserve_eligible
    and funding_source in ('COMPANY_CAPITAL','OPERATING_SURPLUS')
    and asset_type in ('BANK_CASH','BANK_DEPOSIT','SHORT_TERM_GOVERNMENT_SECURITY')
-   and verified_at is not null and evidence_observed_at>=now()-p_evidence_max_age and evidence_observed_at<=now()
+   and verified_at is not null and verified_at<=now() and evidence_observed_at>=now()-p_evidence_max_age and evidence_observed_at<=now()
    and (evidence_valid_until is null or evidence_valid_until>now())),0),
   coalesce(sum(encumbered_usd_value) filter(where verification_status='VERIFIED' and reserve_eligible
    and funding_source in ('COMPANY_CAPITAL','OPERATING_SURPLUS')
    and asset_type in ('BANK_CASH','BANK_DEPOSIT','SHORT_TERM_GOVERNMENT_SECURITY')
-   and verified_at is not null and evidence_observed_at>=now()-p_evidence_max_age and evidence_observed_at<=now()
+   and verified_at is not null and verified_at<=now() and evidence_observed_at>=now()-p_evidence_max_age and evidence_observed_at<=now()
    and (evidence_valid_until is null or evidence_valid_until>now())),0),
   count(*) filter(where verification_status='VERIFIED' and reserve_eligible
    and funding_source in ('COMPANY_CAPITAL','OPERATING_SURPLUS')
    and asset_type in ('BANK_CASH','BANK_DEPOSIT','SHORT_TERM_GOVERNMENT_SECURITY')
-   and verified_at is not null and evidence_observed_at>=now()-p_evidence_max_age and evidence_observed_at<=now()
+   and verified_at is not null and verified_at<=now() and evidence_observed_at>=now()-p_evidence_max_age and evidence_observed_at<=now()
    and (evidence_valid_until is null or evidence_valid_until>now())),
-  count(*) filter(where verification_status='VERIFIED' and (evidence_observed_at is null
+  count(*) filter(where verification_status='VERIFIED' and (verified_at>now() or evidence_observed_at is null
    or evidence_observed_at<now()-p_evidence_max_age or evidence_observed_at>now()
    or (evidence_valid_until is not null and evidence_valid_until<=now()))),
   count(*) filter(where not (verification_status='VERIFIED' and reserve_eligible
    and funding_source in ('COMPANY_CAPITAL','OPERATING_SURPLUS')
    and asset_type in ('BANK_CASH','BANK_DEPOSIT','SHORT_TERM_GOVERNMENT_SECURITY')
-   and verified_at is not null and evidence_observed_at>=now()-p_evidence_max_age and evidence_observed_at<=now()
+   and verified_at is not null and verified_at<=now() and evidence_observed_at>=now()-p_evidence_max_age and evidence_observed_at<=now()
    and (evidence_valid_until is null or evidence_valid_until>now())))
  into v_gross,v_encumbered,v_asset_count,v_stale_count,v_excluded_count
  from public.cfg_reserve_assets;
