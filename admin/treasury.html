@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#050b09">
+<title>Cashflow Gate · Treasury & Reserve</title>
+<link rel="stylesheet" href="../styles.css">
+<style>
+.admin-wrap{max-width:1120px;margin:28px auto;padding:0 16px 70px}
+.admin-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.admin-head h1{font:800 28px Manrope,sans-serif;margin:0}
+.admin-card{background:linear-gradient(145deg,#102218,#0a120d);border:1px solid #276440;border-radius:15px;padding:18px;margin:14px 0}
+.admin-form{display:grid;grid-template-columns:1fr;gap:10px;max-width:460px}
+.admin-form label{font-size:12px;color:#9aafa3}
+.admin-form input{width:100%;background:#080f0b;border:1px solid #1c3a2a;border-radius:9px;padding:12px;color:#f3f8f3}
+.admin-btn{border:0;border-radius:9px;padding:12px 16px;background:#29e879;color:#03230f;font-weight:800;cursor:pointer}
+.admin-btn.secondary{background:#192e55;color:#e7f0ff}
+.admin-msg{font-size:12px;color:#9aafa3;min-height:18px}
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.metric{background:#0b1510;border:1px solid #1c3a2a;border-radius:12px;padding:15px}
+.metric span{display:block;color:#9aafa3;font-size:11px}
+.metric strong{display:block;color:#f3c75b;font:800 22px Manrope,sans-serif;margin-top:7px;overflow-wrap:anywhere}
+.admin-table{width:100%;border-collapse:collapse;font-size:12px}
+.admin-table th,.admin-table td{text-align:left;padding:11px 8px;border-bottom:1px solid #1c3a2a}
+.admin-table th{color:#9aafa3;font-weight:600}
+.table-scroll{overflow:auto}
+.lock-banner{border:1px solid #735b2b;background:#211b0c;color:#f4d88b;border-radius:12px;padding:13px;font-size:12px;margin:16px 0}
+.hidden{display:none!important}
+@media(max-width:560px){.admin-wrap{padding:0 12px 70px}.admin-head h1{font-size:23px}.admin-table{min-width:600px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../supabase-config.js"></script>
+</head>
+<body>
+<div class="admin-wrap">
+  <header class="admin-head">
+    <a class="brand" href="../index.html"><span class="mark">CG</span><span>CASHFLOW <b>GATE</b><small>TREASURY CONTROL</small></span></a>
+    <span class="mode"><i></i> READ-ONLY ADMIN</span>
+  </header>
+  <section class="hero">
+    <p class="eyebrow">FINANCIAL CONTROL CENTRE</p>
+    <h1>Treasury &amp; <em>Reserve</em></h1>
+    <p class="muted">Restricted operational overview. This dashboard does not issue CFG or move customer funds.</p>
+  </section>
+  <section id="loginCard" class="admin-card">
+    <h2>Authorized staff sign-in</h2>
+    <form id="loginForm" class="admin-form">
+      <label for="email">Verified staff email</label>
+      <input id="email" type="email" required autocomplete="username">
+      <label for="password">Password</label>
+      <input id="password" type="password" required autocomplete="current-password">
+      <button class="admin-btn" type="submit">Sign in</button>
+    </form>
+    <p id="loginMessage" class="admin-msg" role="status">Only users assigned an active Treasury role can access this dashboard.</p>
+  </section>
+  <section id="dashboard" class="hidden">
+    <div class="admin-head"><div><p class="eyebrow">AUTHORIZED VIEW</p><h2 id="viewerRole">Treasury staff</h2></div><button id="signOut" class="admin-btn secondary">Sign out</button></div>
+    <div class="lock-banner"><strong>LIVE MONEY DISABLED.</strong> Deposits, withdrawals, issuance, redemptions, investment payouts, custody and payment services remain disabled. This screen is read-only.</div>
+    <div class="admin-grid">
+      <article class="metric"><span>Platform state</span><strong id="platformState">—</strong></article>
+      <article class="metric"><span>Authorized CFG ceiling</span><strong id="supplyCeiling">—</strong></article>
+      <article class="metric"><span>CFG reference value</span><strong id="referenceValue">—</strong></article>
+      <article class="metric"><span>Verified eligible reserve</span><strong id="reserveValue">—</strong></article>
+      <article class="metric"><span>Approved issuance requests</span><strong id="approvedRequests">—</strong></article>
+      <article class="metric"><span>Pending issuance requests</span><strong id="pendingRequests">—</strong></article>
+    </div>
+    <section class="admin-card"><h2>Country readiness</h2><div class="table-scroll"><table class="admin-table"><thead><tr><th>Country</th><th>Currency</th><th>Operational state</th><th>Verified checks</th><th>Real money</th></tr></thead><tbody id="countryRows"></tbody></table></div></section>
+    <p id="updatedAt" class="admin-msg"></p>
+  </section>
+  <p id="pageMessage" class="admin-msg" role="status"></p>
+</div>
+<script src="treasury.js" defer></script>
+</body></html>
