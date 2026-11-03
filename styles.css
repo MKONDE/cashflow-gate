@@ -70,3 +70,9 @@ footer{color:#829b8b}
  .bottom{padding-left:4px;padding-right:4px;gap:2px}
  .bottom a{min-width:0;padding:8px 2px;font-size:10px}
 }
+
+
+/* Custom ROI duration input — shown only when custom duration is selected */
+#roiCustomTermWrap[hidden]{display:none}
+#roiCustomTermWrap input{width:100%;min-height:43px;background:#0b1016;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:10px;font:500 13px 'DM Sans',sans-serif}
+#roiCustomTermWrap input:focus{outline:1px solid var(--green);border-color:var(--green)}
