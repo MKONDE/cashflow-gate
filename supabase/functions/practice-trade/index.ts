@@ -72,7 +72,14 @@ Deno.serve(async (req: Request) => {
 
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    const rawBody = await req.text();
+    if (new TextEncoder().encode(rawBody).byteLength > 16_384) {
+      return reply(413, { error: "Request body is too large" }, origin);
+    }
+    body = JSON.parse(rawBody) as Record<string, unknown>;
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return reply(400, { error: "Request body must be a JSON object" }, origin);
+    }
   } catch {
     return reply(400, { error: "Request body must be valid JSON" }, origin);
   }
