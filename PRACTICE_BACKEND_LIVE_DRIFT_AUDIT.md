@@ -32,3 +32,22 @@ No SQL was changed or applied. No Edge Function was deployed. No secrets, enviro
 ## Release boundary
 
 This audit does not authorize deployment, migration changes on the live project, PR merge, production release, or any real-money feature. CFG remains Demo / Practice only. Real deposits, withdrawals, investment subscriptions, issuance, redemption, custody, and payouts remain disabled.
+
+
+## Follow-up reconciliation evidence (2026-11-05)
+
+A second read-only pass checked the migration ledger, live RPC definition, grants, constraints, indexes, policies, and triggers:
+
+- The live `supabase_migrations.schema_migrations` table confirms version `20261101134606` is recorded as `secure_practice_trade_rpc_v1`.
+- The live `record_practice_trade(uuid, text, text, numeric, numeric, uuid, text)` definition does not use `practice_events.position_id`, does not write that field, and its duplicate response returns only `event_id`; it also lacks the rate-limit counters present in the current branch migration. This confirms the recorded migration version and current branch migration contents do not describe the same effective schema/function state. The precise historical cause (for example, a migration file edited after its application versus a different SQL payload applied under the same version) cannot be proven from the read-only evidence gathered so far.
+- Live constraints include the unique key `(user_id, idempotency_key)`, but no position foreign key exists on `practice_events` because the column itself is absent.
+- Live RLS policies are owner-scoped SELECT for `profiles`, `practice_events`, and `practice_positions`; `profiles` also has owner-scoped UPDATE with both `USING` and `WITH CHECK`. No INSERT/UPDATE/DELETE policies were found for practice tables.
+- Table grants show `authenticated` has SELECT only on those three tables; `service_role` has table privileges. No `anon` table grants were returned for those tables.
+- Routine grants for `record_practice_trade` show EXECUTE for `service_role` and `postgres`; no `PUBLIC`, `anon`, or `authenticated` EXECUTE grant was returned. The routine is SECURITY DEFINER, so the server-side Edge Function's identity validation remains essential.
+- No non-internal triggers were returned for the three inspected public tables.
+- Live RLS policy predicates use `auth.uid() = user_id` / `auth.uid() = id`. This matches the ownership intent but explains the advisor's init-plan performance warnings; any policy rewrite must be tested, not blindly applied.
+- `list_branches` returned no existing Supabase development branches. Creating an isolated branch may incur recurring compute cost, so no branch was created and no cost-bearing operation was attempted.
+
+## Updated conclusion
+
+The issue is not merely a missing column: the live RPC body also differs from the current migration file, including the duplicate response and rate-limit behavior. Treat the live project as a distinct deployed revision until a clean, isolated migration rehearsal proves a safe reconciliation path. Do not edit the already-recorded migration version in place, replay it blindly, or patch the live database directly.
