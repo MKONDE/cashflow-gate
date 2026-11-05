@@ -1,5 +1,8 @@
 const markets=[{id:"gold",name:"Gold",symbol:"XAU/USD",short:"AU",price:2350,change:1.2,type:"commodity"},{id:"silver",name:"Silver",symbol:"XAG/USD",short:"AG",price:28.42,change:-.34,type:"commodity"},{id:"maize",name:"Maize",symbol:"MAIZE",short:"MZ",price:312.5,change:.72,type:"commodity"},{id:"rice",name:"Rice",symbol:"RICE",short:"RC",price:418.2,change:-.18,type:"commodity"},{id:"bitcoin",name:"Bitcoin",symbol:"BTC/USD",short:"₿",price:67420,change:2.31,type:"crypto"},{id:"ethereum",name:"Ethereum",symbol:"ETH/USD",short:"Ξ",price:3520.8,change:.85,type:"crypto"},{id:"eurusd",name:"EUR / USD",symbol:"EURUSD",short:"€$",price:1.0842,change:-.12,type:"forex"},{id:"gbpusd",name:"GBP / USD",symbol:"GBPUSD",short:"£$",price:1.2714,change:.23,type:"forex"}];
 const STORAGE_KEY="cashflowGatePracticeV1";
+const PENDING_IDEMPOTENCY_PREFIX="cfgPracticePendingV1:";
+function pendingIdempotencyKey(action,scope="default"){const key=PENDING_IDEMPOTENCY_PREFIX+action+":"+scope;try{let value=localStorage.getItem(key);if(!value){value=crypto.randomUUID();localStorage.setItem(key,value);}return value;}catch(e){return crypto.randomUUID();}}
+function clearPendingIdempotencyKey(action,scope="default"){try{localStorage.removeItem(PENDING_IDEMPOTENCY_PREFIX+action+":"+scope);}catch(e){}}
 const freshState=()=>({balance:10000,selected:"gold",positions:[],xp:0,history:[]});
 function loadState(){try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));if(saved&&typeof saved.balance==="number"&&Array.isArray(saved.positions)&&Array.isArray(saved.history))return {...freshState(),...saved};}catch(e){}return freshState();}
 const s=loadState();const fmt=n=>Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});const get=id=>markets.find(m=>m.id===id);
@@ -11,16 +14,21 @@ function select(id){s.selected=id;const m=get(id);document.querySelector("#selec
 function stats(){document.querySelector("#balance").innerHTML=fmt(s.balance)+' <small>CFG</small>';const pnl=s.positions.reduce((n,p)=>n+p.units*(get(p.market).price-p.entry),0),el=document.querySelector("#pnl");el.innerHTML=(pnl>=0?"+":"")+fmt(pnl)+' <small>CFG</small>';el.className=pnl>=0?"green":"red";document.querySelector("#openCount").textContent=s.positions.length+" open positions";document.querySelector("#xp").textContent=s.xp+" XP";save();}
 function renderPositions(){const root=document.querySelector("#positions");root.innerHTML="";document.querySelector("#empty").style.display=s.positions.length?"none":"block";s.positions.forEach(p=>{const m=get(p.market),pnl=p.units*(m.price-p.entry),row=document.createElement("div");row.className="position";row.innerHTML='<div><b>'+m.name+' · Virtual Buy</b><small>'+p.units.toFixed(5)+' units @ '+fmt(p.entry)+'</small></div><div style="text-align:right"><b class="'+(pnl>=0?"green":"red")+'">'+(pnl>=0?"+":"")+fmt(pnl)+' CFG</b><button data-close="'+p.id+'">Close position</button></div>';root.appendChild(row);});root.querySelectorAll("[data-close]").forEach(b=>b.onclick=()=>close(b.dataset.close));}
 function message(t){document.querySelector("#tradeMessage").textContent=t;}
-async function buy(){const amount=Number(document.querySelector("#amount").value),m=get(s.selected);if(!Number.isFinite(amount)||amount<=0){message("Enter a valid practice amount.");return;}if(amount>s.balance){message("Insufficient virtual balance. Reduce the amount.");return;}let serverPositionId=null;
+let tradeActionInFlight=false;
+async function buy(){if(tradeActionInFlight)return;const amount=Number(document.querySelector("#amount").value),m=get(s.selected);if(!Number.isFinite(amount)||amount<=0){message("Enter a valid practice amount.");return;}if(amount>s.balance){message("Insufficient virtual balance. Reduce the amount.");return;}let serverPositionId=null;
 if(window.CFG_AUTH?.session){
- try{const saved=await window.CFG_AUTH.recordTrade({action:"buy",market_symbol:m.symbol.replaceAll("/","-"),price:m.price,virtual_units:amount/m.price,idempotency_key:crypto.randomUUID()});serverPositionId=saved.position_id;}
- catch(error){message(error.message||"Could not save practice trade.");return;}
+ tradeActionInFlight=true;
+ try{const key=pendingIdempotencyKey("buy");const saved=await window.CFG_AUTH.recordTrade({action:"buy",market_symbol:m.symbol.replaceAll("/","-"),price:m.price,virtual_units:amount/m.price,idempotency_key:key});serverPositionId=saved.position_id;clearPendingIdempotencyKey("buy");}
+ catch(error){message((error.message||"Could not save practice trade.")+" Retry the same action to safely reuse its request key.");tradeActionInFlight=false;return;}
+ tradeActionInFlight=false;
 }
 s.balance-=amount;s.positions.push({id:serverPositionId||Date.now().toString()+Math.random().toString(16).slice(2),market:m.id,entry:m.price,units:amount/m.price,cost:amount});logEvent("Practice Buy · "+m.name+" · "+fmt(amount)+" CFG (device-only demo balance)");message("Virtual Buy recorded for "+m.name+". The demo balance is device-only; no real order was sent.");stats();renderPositions();}
-async function close(id){const i=s.positions.findIndex(p=>p.id===id);if(i<0)return;const p=s.positions[i],m=get(p.market),proceeds=p.units*m.price,pnl=proceeds-p.cost;
+async function close(id){if(tradeActionInFlight)return;const i=s.positions.findIndex(p=>p.id===id);if(i<0)return;const p=s.positions[i],m=get(p.market),proceeds=p.units*m.price,pnl=proceeds-p.cost;
 if(window.CFG_AUTH?.session){
- try{await window.CFG_AUTH.recordTrade({action:"close",market_symbol:m.symbol.replaceAll("/","-"),price:m.price,virtual_units:p.units,position_id:p.id,idempotency_key:crypto.randomUUID()});}
- catch(error){message(error.message||"Could not close server practice position.");return;}
+ tradeActionInFlight=true;
+ try{const key=pendingIdempotencyKey("close",p.id);await window.CFG_AUTH.recordTrade({action:"close",market_symbol:m.symbol.replaceAll("/","-"),price:m.price,virtual_units:p.units,position_id:p.id,idempotency_key:key});clearPendingIdempotencyKey("close",p.id);}
+ catch(error){message((error.message||"Could not close server practice position.")+" Retry closing this position to safely reuse its request key.");tradeActionInFlight=false;return;}
+ tradeActionInFlight=false;
 }
 s.balance+=proceeds;s.xp+=pnl>=0?10:2;s.positions.splice(i,1);logEvent("Position closed · "+m.name+" · "+(pnl>=0?"+":"")+fmt(pnl)+" CFG simulated P/L");message("Practice position closed: "+(pnl>=0?"+":"")+fmt(pnl)+" CFG simulated P/L. Demo balance remains device-only.");stats();renderPositions();}
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.toggle("active",x===b));renderMarkets(b.dataset.filter);});
