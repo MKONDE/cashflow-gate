@@ -70,3 +70,14 @@ footer{color:#829b8b}
  .bottom{padding-left:4px;padding-right:4px;gap:2px}
  .bottom a{min-width:0;padding:8px 2px;font-size:10px}
 }
+
+/* Secure account and authentication panel */
+.accountCard{max-width:720px;border-color:#276440;background:linear-gradient(145deg,#102218,#0a120d)}
+.accountStatus{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.accountStatus span{color:var(--muted);font-size:11px}
+.accountStatus strong{font-size:12px;overflow-wrap:anywhere}
+#authForms label{display:block;color:var(--muted);font-size:11px;margin:12px 0 6px}
+#authForms input,#authForms select{width:100%;min-height:43px;background:#080f0b;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:10px;font:500 13px 'DM Sans',sans-serif}
+#authForms button[type=submit]{width:100%;margin-top:14px}
+#authForms #forgotPassword{margin-top:8px}
+.authError{color:#ff8790!important;border:1px solid #71333b}
