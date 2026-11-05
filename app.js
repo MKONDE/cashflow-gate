@@ -1,7 +1,7 @@
 const markets=[{id:"gold",name:"Gold",symbol:"XAU/USD",short:"AU",price:2350,change:1.2,type:"commodity"},{id:"silver",name:"Silver",symbol:"XAG/USD",short:"AG",price:28.42,change:-.34,type:"commodity"},{id:"maize",name:"Maize",symbol:"MAIZE",short:"MZ",price:312.5,change:.72,type:"commodity"},{id:"rice",name:"Rice",symbol:"RICE",short:"RC",price:418.2,change:-.18,type:"commodity"},{id:"bitcoin",name:"Bitcoin",symbol:"BTC/USD",short:"₿",price:67420,change:2.31,type:"crypto"},{id:"ethereum",name:"Ethereum",symbol:"ETH/USD",short:"Ξ",price:3520.8,change:.85,type:"crypto"},{id:"eurusd",name:"EUR / USD",symbol:"EURUSD",short:"€$",price:1.0842,change:-.12,type:"forex"},{id:"gbpusd",name:"GBP / USD",symbol:"GBPUSD",short:"£$",price:1.2714,change:.23,type:"forex"}];
 const STORAGE_KEY="cashflowGatePracticeV1";
 const PENDING_IDEMPOTENCY_PREFIX="cfgPracticePendingV1:";
-function pendingIdempotencyKey(action,scope="default"){const key=PENDING_IDEMPOTENCY_PREFIX+action+":"+scope;try{let value=localStorage.getItem(key);if(!value){value=crypto.randomUUID();localStorage.setItem(key,value);}return value;}catch(e){return crypto.randomUUID();}}
+function pendingIdempotencyKey(action,scope="default",payload={}){const storageKey=PENDING_IDEMPOTENCY_PREFIX+action+":"+scope;const fingerprint=JSON.stringify(payload);try{const saved=JSON.parse(localStorage.getItem(storageKey)||"null");if(saved&&saved.fingerprint===fingerprint&&saved.key)return saved.key;const key=crypto.randomUUID();localStorage.setItem(storageKey,JSON.stringify({key,fingerprint}));return key;}catch(e){return crypto.randomUUID();}}
 function clearPendingIdempotencyKey(action,scope="default"){try{localStorage.removeItem(PENDING_IDEMPOTENCY_PREFIX+action+":"+scope);}catch(e){}}
 const freshState=()=>({balance:10000,selected:"gold",positions:[],xp:0,history:[]});
 function loadState(){try{const saved=JSON.parse(localStorage.getItem(STORAGE_KEY));if(saved&&typeof saved.balance==="number"&&Array.isArray(saved.positions)&&Array.isArray(saved.history))return {...freshState(),...saved};}catch(e){}return freshState();}
@@ -18,7 +18,7 @@ let tradeActionInFlight=false;
 async function buy(){if(tradeActionInFlight)return;const amount=Number(document.querySelector("#amount").value),m=get(s.selected);if(!Number.isFinite(amount)||amount<=0){message("Enter a valid practice amount.");return;}if(amount>s.balance){message("Insufficient virtual balance. Reduce the amount.");return;}let serverPositionId=null;
 if(window.CFG_AUTH?.session){
  tradeActionInFlight=true;
- try{const key=pendingIdempotencyKey("buy");const saved=await window.CFG_AUTH.recordTrade({action:"buy",market_symbol:m.symbol.replaceAll("/","-"),price:m.price,virtual_units:amount/m.price,idempotency_key:key});serverPositionId=saved.position_id;clearPendingIdempotencyKey("buy");}
+ try{const payload={action:"buy",market_symbol:m.symbol.replaceAll("/","-"),price:m.price,virtual_units:amount/m.price};const key=pendingIdempotencyKey("buy","default",payload);const saved=await window.CFG_AUTH.recordTrade({...payload,idempotency_key:key});serverPositionId=saved.position_id;clearPendingIdempotencyKey("buy");}
  catch(error){message((error.message||"Could not save practice trade.")+" Retry the same action to safely reuse its request key.");tradeActionInFlight=false;return;}
  tradeActionInFlight=false;
 }
@@ -26,7 +26,7 @@ s.balance-=amount;s.positions.push({id:serverPositionId||Date.now().toString()+M
 async function close(id){if(tradeActionInFlight)return;const i=s.positions.findIndex(p=>p.id===id);if(i<0)return;const p=s.positions[i],m=get(p.market),proceeds=p.units*m.price,pnl=proceeds-p.cost;
 if(window.CFG_AUTH?.session){
  tradeActionInFlight=true;
- try{const key=pendingIdempotencyKey("close",p.id);await window.CFG_AUTH.recordTrade({action:"close",market_symbol:m.symbol.replaceAll("/","-"),price:m.price,virtual_units:p.units,position_id:p.id,idempotency_key:key});clearPendingIdempotencyKey("close",p.id);}
+ try{const payload={action:"close",market_symbol:m.symbol.replaceAll("/","-"),price:m.price,virtual_units:p.units,position_id:p.id};const key=pendingIdempotencyKey("close",p.id,payload);await window.CFG_AUTH.recordTrade({...payload,idempotency_key:key});clearPendingIdempotencyKey("close",p.id);}
  catch(error){message((error.message||"Could not close server practice position.")+" Retry closing this position to safely reuse its request key.");tradeActionInFlight=false;return;}
  tradeActionInFlight=false;
 }
