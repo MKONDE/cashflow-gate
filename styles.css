@@ -74,3 +74,12 @@ footer{color:#829b8b}
 
 /* CFG PLAY & PREDICT additive demo modules */
 .playGrid{display:grid;grid-template-columns:1fr;gap:12px}.playCard,.predictCard{background:linear-gradient(145deg,#10251a,#0a120e);border-color:#28543a}.playBadge{display:inline-flex;padding:5px 9px;border-radius:7px;background:#153d25;color:#71f5a4;font-size:9px;font-weight:800;letter-spacing:.12em}.blueBadge{background:#152b47;color:#91c8ff}.playCard h3,.predictTop h3{font:750 18px Manrope,sans-serif;margin:12px 0 5px}.playCard>.muted,.predictCard>.muted{font-size:12px}.quizQuestion{font-weight:700;font-size:13px;margin:16px 0 10px}.quizAnswers{display:grid;gap:8px}.quizAnswers button{border:1px solid #31543d;background:#0a1710;color:var(--text);padding:11px;border-radius:9px;text-align:left;font-size:12px}.quizAnswers button:disabled,.predictCard button:disabled{opacity:.55;cursor:not-allowed}.playScore{border-top:1px solid var(--line);margin-top:14px;padding-top:12px;font-size:11px;color:var(--muted)}.playScore strong{color:var(--gold);font-size:18px}.playScore small{font-size:9px}.strategyPreview{display:flex;justify-content:space-around;align-items:center;margin:18px 0;padding:16px;border:1px solid #263d53;border-radius:12px;background:#0a1420;color:#a7d2ff;font-size:28px}.predictTop{display:flex;justify-content:space-between;align-items:center;gap:8px}.predictTop small{color:var(--muted);font-size:10px}.predictTop h3{margin:3px 0}.predictCard .actions{margin-top:16px}@media(min-width:700px){.playGrid{grid-template-columns:1.2fr .8fr}.playCard{min-height:260px}}
+
+
+/* CFG PLAY chess practice board */
+.chessMeta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0;color:var(--green);font-size:12px;font-weight:800}
+.chessBoard{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));width:min(100%,360px);aspect-ratio:1;margin:12px auto;border:3px solid #385744;border-radius:8px;overflow:hidden}
+.chessCell{display:flex;align-items:center;justify-content:center;min-width:0;aspect-ratio:1;border:0;border-radius:0;padding:0;font-family:serif;font-size:clamp(20px,7vw,36px);line-height:1;cursor:pointer}
+.chessCell.light{background:#e7dfc8;color:#17231b}.chessCell.dark{background:#63866c;color:#101b13}
+.chessCell.chosen{outline:3px solid #f2c85b;outline-offset:-3px;background:#b9a34e}
+.chessCell:focus-visible{outline:3px solid #5eb8ff;outline-offset:-3px;z-index:1}

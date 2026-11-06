@@ -68,3 +68,19 @@ initRoiDemo();
   if(predictMessage)predictMessage.textContent="Utabiri wa demo umerekodiwa: "+prediction.choice.toUpperCase()+". Hakuna dau wala malipo.";picks.forEach(b=>b.disabled=true);
  }));
 })();
+
+
+// CFG PLAY Chess movement practice — local two-player MVP, no stakes.
+(function initChessPractice(){
+ const boardEl=document.querySelector("#chessBoard"),turnEl=document.querySelector("#chessTurn"),messageEl=document.querySelector("#chessMessage"),resetEl=document.querySelector("#chessReset");
+ if(!boardEl||!turnEl||!messageEl||!resetEl)return;
+ const glyph={w:{K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙"},b:{K:"♚",Q:"♛",R:"♜",B:"♝",N:"♞",P:"♟"}};
+ let board,turn,selected;
+ function fresh(){board=Array.from({length:8},()=>Array(8).fill(null));const back=["R","N","B","Q","K","B","N","R"];for(let c=0;c<8;c++){board[0][c]={side:"b",type:back[c]};board[1][c]={side:"b",type:"P"};board[6][c]={side:"w",type:"P"};board[7][c]={side:"w",type:back[c]};}turn="w";selected=null;messageEl.textContent="White aanze kwa kucheza. Chagua kete kisha eneo la kwenda.";render();}
+ function inside(r,c){return r>=0&&r<8&&c>=0&&c<8;}
+ function pathClear(r,c,nr,nc){const dr=Math.sign(nr-r),dc=Math.sign(nc-c);let y=r+dr,x=c+dc;while(y!==nr||x!==nc){if(board[y][x])return false;y+=dr;x+=dc;}return true;}
+ function canMove(r,c,nr,nc){const p=board[r][c],target=board[nr][nc];if(!p||p.side!==turn||(target&&target.side===p.side)||(r===nr&&c===nc))return false;const dr=nr-r,dc=nc-c,ar=Math.abs(dr),ac=Math.abs(dc);switch(p.type){case"P":{const dir=p.side==="w"?-1:1,start=p.side==="w"?6:1;if(dc===0&&!target&&dr===dir)return true;if(dc===0&&!target&&r===start&&dr===2*dir&&!board[r+dir][c])return true;return ac===1&&dr===dir&&!!target;}case"N":return(ar===2&&ac===1)||(ar===1&&ac===2);case"K":return ar<=1&&ac<=1;case"R":return(dr===0||dc===0)&&pathClear(r,c,nr,nc);case"B":return ar===ac&&pathClear(r,c,nr,nc);case"Q":return(dr===0||dc===0||ar===ac)&&pathClear(r,c,nr,nc);default:return false;}}
+ function render(){boardEl.innerHTML="";for(let r=0;r<8;r++)for(let c=0;c<8;c++){const cell=document.createElement("button");cell.type="button";cell.className="chessCell "+((r+c)%2?"dark":"light");cell.setAttribute("role","gridcell");cell.setAttribute("aria-label",String.fromCharCode(97+c)+(8-r));if(selected&&selected.r===r&&selected.c===c)cell.classList.add("chosen");const p=board[r][c];if(p)cell.textContent=glyph[p.side][p.type];cell.addEventListener("click",()=>tap(r,c));boardEl.appendChild(cell);}turnEl.textContent=(turn==="w"?"White":"Black")+" to move";}
+ function tap(r,c){const p=board[r][c];if(selected){if(canMove(selected.r,selected.c,r,c)){const moving=board[selected.r][selected.c];board[r][c]=moving;board[selected.r][selected.c]=null;if(moving.type==="P"&&(r===0||r===7)){moving.type="Q";messageEl.textContent="Pawn imefika mwisho na imepandishwa kuwa Queen.";}else messageEl.textContent=(turn==="w"?"White":"Black")+" moved. Sasa ni zamu ya "+(turn==="w"?"Black":"White")+".";turn=turn==="w"?"b":"w";selected=null;render();return;}if(p&&p.side===turn){selected={r,c};messageEl.textContent="Kete imechaguliwa. Gusa eneo halali la kuhamia.";}else{selected=null;messageEl.textContent="Mwendo huo haukubaliki kwa aina hii ya kete. Chagua tena."; }render();return;}if(p&&p.side===turn){selected={r,c};messageEl.textContent="Kete imechaguliwa. Gusa eneo la kwenda." ;render();}else messageEl.textContent="Chagua kete ya upande unaocheza.";}
+ resetEl.addEventListener("click",fresh);fresh();
+})();
