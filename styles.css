@@ -83,3 +83,18 @@ footer{color:#829b8b}
 .chessCell.light{background:#e7dfc8;color:#17231b}.chessCell.dark{background:#63866c;color:#101b13}
 .chessCell.chosen{outline:3px solid #f2c85b;outline-offset:-3px;background:#b9a34e}
 .chessCell:focus-visible{outline:3px solid #5eb8ff;outline-offset:-3px;z-index:1}
+
+
+/* CFG PLAY Football Manager — responsive local simulator */
+.managerCard{grid-column:1/-1}.managerControls{display:grid;grid-template-columns:1fr;gap:10px;margin:16px 0}
+.managerControls label{display:block;color:var(--muted);font-size:11px;margin-bottom:6px}
+.managerControls select{width:100%;padding:11px;border:1px solid #31543d;border-radius:9px;background:#09150e;color:var(--text)}
+.managerSummary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.managerSummary>div{padding:12px 8px;border:1px solid #254b33;border-radius:10px;background:#0b1b11}
+.managerSummary small{display:block;color:var(--muted);font-size:10px}
+.managerSummary strong{display:block;color:var(--gold);font-size:20px;margin-top:5px}
+.managerCard>#fmPlay{width:100%;margin:4px 0 8px}
+.managerTable{margin-top:16px;border-top:1px solid var(--line);padding-top:12px}.managerTable h4{font-size:13px;margin:0 0 8px}
+.fmRow{display:grid;grid-template-columns:24px 1fr auto;gap:9px;align-items:center;padding:9px 4px;border-bottom:1px solid #20372a;font-size:11px}
+.fmRow>span{color:var(--muted)}.fmRow strong{color:var(--green)}
+@media(min-width:700px){.managerControls{grid-template-columns:repeat(3,minmax(0,1fr))}}
