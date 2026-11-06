@@ -47,7 +47,7 @@ initRoiDemo();
  try{const saved=JSON.parse(localStorage.getItem(playKey));if(saved&&typeof saved.points==="number")play={...play,...saved};}catch(e){}
  const pointsEl=document.querySelector("#playPoints"),quizMessage=document.querySelector("#quizMessage");
  if(pointsEl)pointsEl.textContent=String(play.points);
- const today=new Date().toISOString().slice(0,10);
+ const now=new Date();const today=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");
  const answerButtons=[...document.querySelectorAll("[data-answer]")];
  if(play.answeredOn===today){if(quizMessage)quizMessage.textContent="Umeshajibu changamoto ya leo kwenye kifaa hiki. Rudi kesho kwa swali jipya.";answerButtons.forEach(b=>b.disabled=true);}
  answerButtons.forEach(button=>button.addEventListener("click",()=>{
