@@ -39,3 +39,32 @@ function initRoiDemo(){
  [principal,term,scenario].forEach(el=>{el.addEventListener("input",update);el.addEventListener("change",update);});update();
 }
 initRoiDemo();
+
+
+// CFG PLAY + CFG PREDICT — additive, free-to-play demo only.
+(function initPlayPredict(){
+ const playKey="cfgPlayDemoV1";let play={points:0,answeredOn:""};
+ try{const saved=JSON.parse(localStorage.getItem(playKey));if(saved&&typeof saved.points==="number")play={...play,...saved};}catch(e){}
+ const pointsEl=document.querySelector("#playPoints"),quizMessage=document.querySelector("#quizMessage");
+ if(pointsEl)pointsEl.textContent=String(play.points);
+ const today=new Date().toISOString().slice(0,10);
+ const answerButtons=[...document.querySelectorAll("[data-answer]")];
+ if(play.answeredOn===today){if(quizMessage)quizMessage.textContent="Umeshajibu changamoto ya leo kwenye kifaa hiki. Rudi kesho kwa swali jipya.";answerButtons.forEach(b=>b.disabled=true);}
+ answerButtons.forEach(button=>button.addEventListener("click",()=>{
+  if(play.answeredOn===today)return;
+  const correct=button.dataset.answer==="a";play.answeredOn=today;if(correct)play.points+=10;
+  try{localStorage.setItem(playKey,JSON.stringify(play));}catch(e){}
+  if(pointsEl)pointsEl.textContent=String(play.points);
+  if(quizMessage)quizMessage.textContent=correct?"Sahihi! Umeongeza pointi 10 za CFG PLAY demo.":"Si sahihi. Jibu sahihi ni Cash-flow statement. Jaribio la leo limeisha.";
+  answerButtons.forEach(b=>b.disabled=true);
+ }));
+ const predictKey="cfgPredictDemoV1",predictMessage=document.querySelector("#marketPredictMessage");
+ let prediction={date:"",choice:""};try{prediction=JSON.parse(localStorage.getItem(predictKey))||prediction;}catch(e){}
+ const picks=[...document.querySelectorAll("[data-market-pick]")];
+ if(prediction.date===today&&prediction.choice){if(predictMessage)predictMessage.textContent="Utabiri wako wa leo umerekodiwa: "+prediction.choice.toUpperCase()+". Raundi hii ni ya mazoezi tu.";picks.forEach(b=>b.disabled=true);}
+ picks.forEach(button=>button.addEventListener("click",()=>{
+  if(prediction.date===today)return;
+  prediction={date:today,choice:button.dataset.marketPick};try{localStorage.setItem(predictKey,JSON.stringify(prediction));}catch(e){}
+  if(predictMessage)predictMessage.textContent="Utabiri wa demo umerekodiwa: "+prediction.choice.toUpperCase()+". Hakuna dau wala malipo.";picks.forEach(b=>b.disabled=true);
+ }));
+})();
