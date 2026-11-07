@@ -53,11 +53,8 @@
     if(options.some(x=>!Number.isFinite(Number(x)))){managerMessage.textContent="Kwa demo hili, majibu yawe namba.";return;}
     const list=read(customKey,[]);const newQuestion={id:"custom-"+Date.now(),category:"Custom",difficulty:"Basic",question:prompt,answer:Number(options[answerIndex])};list.push(newQuestion);if(!write(customKey,list)){managerMessage.textContent="Hifadhi imeshindikana kwenye browser hii.";return;}bank.push(newQuestion);
     managerMessage.textContent="Swali limehifadhiwa kwenye kifaa hiki. Jumla ya maswali: "+bank.length+".";const countEl=$("#quizBankCount"),managerCountEl=$("#quizManagerCount");if(countEl)countEl.textContent=String(bank.length);if(managerCountEl)managerCountEl.textContent=String(bank.length);addForm.reset();});
-  const plateRows=[[1,"Normal","Haijapangiwa probability"],[2,"Normal","Haijapangiwa probability"],[3,"Normal","Haijapangiwa probability"],[4,"Small Win","Sehemu ya kundi la Winning 35%"],[5,"Fail","Sehemu ya kundi la Fail 63%"],[6,"Fail","Sehemu ya kundi la Fail 63%"],[7,"Normal","Haijapangiwa probability"],[8,"Normal","Haijapangiwa probability"],[9,"Big Win","Sehemu ya kundi la Winning 35%"],[10,"Fail","Fail 2%"],[11,"Normal","Haijapangiwa probability"],[12,"Normal","Haijapangiwa probability"],[13,"Fail","Sehemu ya kundi la Fail 63%"]];
-  const plateList=$("#plateProbabilityList");
-  if(plateList)plateRows.forEach(([number,outcome,note])=>{const row=document.createElement("div");row.className="plateProbabilityRow";const plate=document.createElement("strong");plate.textContent="Plate "+number;const label=document.createElement("span");label.textContent=outcome;const detail=document.createElement("small");detail.textContent=note;row.append(plate,label,detail);plateList.appendChild(row);});
-  const plateMessage=$("#plateSimulatorMessage"),plateStart=$("#plateSimulatorStart");
-  if(plateStart){plateStart.disabled=true;plateStart.addEventListener("click",()=>{if(plateMessage)plateMessage.textContent="Round haijawashwa: probability za kila plate ya Normal na mgawanyo wa Small Win/Big Win bado vinahitaji kuidhinishwa.";});}
+  // Plate probability rows and the demo draw are rendered by app.js only.
+  // Keep a single source of truth: 13 plates, each with equal 1/13 probability.
   const bankCount=$("#quizBankCount");if(bankCount)bankCount.textContent=String(bank.length);
   const managerCount=$("#quizManagerCount");if(managerCount)managerCount.textContent=String(bank.length);
 })();
