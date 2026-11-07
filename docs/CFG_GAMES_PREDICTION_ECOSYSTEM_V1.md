@@ -105,3 +105,35 @@ Before any regulated product activation: legal review per country, licensing/par
 - Games Hub links visibly distinguish CFG PLAY, CFG PREDICT and the disabled CFG BET catalogue; Horse Racing and Binary / High-Low appear in the CFG BET catalogue.
 - No database migration or production deployment occurs without separate approval.
 - Changes are delivered through pull requests; main remains untouched until review and explicit merge approval.
+
+
+## 8. CFG QUIZ POT V1 — additive demo specification
+
+- Ten questions per attempt, one 60-second total countdown.
+- Two Quiz Points per correct answer; maximum 20 points.
+- The third incorrect answer immediately ends the attempt. Timeout also ends the attempt.
+- Initial browser demo generates more than 1,000 arithmetic questions (addition, subtraction, multiplication and division) and supports local-only custom numeric questions.
+- Quiz Points valuation: 1,000 Quiz Points = 0.5 CFG. This is a valuation reference only, not conversion, issuance, wallet credit, withdrawal, transfer or cash value.
+- Demo score/history are stored in browser localStorage and are user-editable. They are not authoritative and cannot qualify a real prize.
+- Production question management requires authenticated admin roles, server-side question storage, review/approval, server-held answer keys, server-authoritative timers/scoring, rate limits, anti-abuse checks and immutable audit events.
+- No database migration or Supabase change is included in this demo implementation.
+
+## 9. CFG PLATE GAMES V1 — probability catalogue and safe boundary
+
+Approved group-level probability values:
+- Fail group: 63% (Plates 5, 6 and 13).
+- Winning group: 35% (Small Win / Big Win, Plates 4 and 9).
+- Plate 10: 2% Fail.
+- Group total: 100%; total Fail = 65%, total Winning = 35%.
+
+Plate catalogue:
+- Plates 1, 2, 3, 7, 8, 11 and 12 are labelled Normal, but no individual probabilities or result/payout semantics have been approved.
+- The 35% winning group has not been split between Small Win and Big Win.
+- Therefore the V1 browser implementation may display the catalogue and approved group percentages but MUST NOT perform a random draw, assign individual plate odds, simulate payouts or represent a winning chance until the missing allocation rules are explicitly approved.
+- No stake, deposit, withdrawal, prize settlement, CFG wallet connection or real-money betting. CFG BET remains disabled.
+
+## 10. Delivery and verification notes
+
+- cfg-quiz-plate.js is a client-side prototype only. Browser localStorage and Math.random question selection are not secure or authoritative.
+- Verify 60-second timeout, third-wrong termination, 2-point scoring, 20-point maximum, 1,000+ bank count, custom-question validation, mobile layout and financial isolation.
+- Do not claim server-side security, production readiness, live competition integrity or real prize eligibility from this static prototype.
