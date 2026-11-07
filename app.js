@@ -124,3 +124,39 @@ initRoiDemo();
  state.played++;state.goalsFor+=scored;state.goalsAgainst+=conceded;let result;if(scored>conceded){state.wins++;state.points+=3;result="WIN";}else if(scored===conceded){state.draws++;state.points++;result="DRAW";}else{state.losses++;result="LOSS";}
  messageEl.textContent=club.name+" "+scored+"–"+conceded+" "+op.name+" · "+result+". Fixture "+state.played+"/6.";save();render();});render();
 })();
+
+// CFG Plate Games — equal-probability demo simulator; no stakes, payouts or wallet access.
+(function initPlateSimulator(){
+ const list=document.querySelector("#plateProbabilityList");
+ const button=document.querySelector("#plateSimulatorStart");
+ const message=document.querySelector("#plateSimulatorMessage");
+ if(!list||!button||!message)return;
+ const plates=[
+  {n:1,result:"Normal"},{n:2,result:"Normal"},{n:3,result:"Normal"},
+  {n:4,result:"Small Win"},{n:5,result:"Fail"},{n:6,result:"Fail"},
+  {n:7,result:"Normal"},{n:8,result:"Normal"},{n:9,result:"Big Win"},
+  {n:10,result:"Fail"},{n:11,result:"Normal"},{n:12,result:"Normal"},{n:13,result:"Fail"}
+ ];
+ const ticketCount=1300, ticketsPerPlate=100;
+ const percent=(ticketsPerPlate/ticketCount*100).toFixed(4)+"%";
+ plates.forEach(p=>{
+  const row=document.createElement("div");row.className="plateProbabilityRow";
+  const name=document.createElement("b");name.textContent="Plate "+p.n;
+  const outcome=document.createElement("span");outcome.textContent=p.result;
+  const chance=document.createElement("strong");chance.textContent=percent+" · 1/13";
+  row.append(name,outcome,chance);list.appendChild(row);
+ });
+ function secureIndex(max){
+  if(!globalThis.crypto?.getRandomValues)throw new Error("Secure random source is unavailable in this browser.");
+  const range=0x100000000,limit=Math.floor(range/max)*max;
+  const word=new Uint32Array(1);
+  do{crypto.getRandomValues(word);}while(word[0]>=limit);
+  return word[0]%max;
+ }
+ button.addEventListener("click",()=>{
+  try{
+   const chosen=plates[secureIndex(plates.length)];
+   message.textContent="Matokeo ya demo: Plate "+chosen.n+" — "+chosen.result+". Kila plate ilikuwa na nafasi sawa ya 1/13 (7.6923%).";
+  }catch(error){message.textContent="Droo haikuweza kufanyika: "+error.message;}
+ });
+})();
