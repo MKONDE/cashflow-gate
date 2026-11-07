@@ -33,15 +33,16 @@ Prediction and scoring products:
 - Gold and silver market-direction prediction
 - Esports prediction
 - Prediction League and leaderboards
+- Global Prediction Competition (free-to-play scoring; any prize requires separately approved published terms and legal review)
 
 Initial implementation is free-to-play, points-based and demo-only. No entry fee or cash-equivalent prize is enabled by this specification.
 
 ### CFG BET
 A separately gated product for regulated real-money betting:
-- Witiri / Multiplier and Crash-style games
-- Auto-Cashout
+- Witiri / Multiplier and Binary / High-Low games
+- Crash-style games and Auto-Cashout
 - Global Stake Pools and Capacity Rooms
-- Jackpot and Rollover
+- Daily / Global Jackpot, Triple Accumulator and Rollover Engine
 - Sports, virtual sports, esports and horse-racing markets
 
 CFG BET must remain a disabled product shell / simulation only until country-by-country legal review, licensing or approved licensed-partner arrangements, age and identity controls, responsible-gaming controls, payment safeguarding, independent game fairness testing and financial-risk approval are complete. No real-money staking, deposits, withdrawals, cash-equivalent payouts or live betting APIs are in scope now.
@@ -78,7 +79,7 @@ Add a Games hub and first free games: Quiz, Daily Challenge, Chess/Strategy plac
 Add sports/commodity prediction interfaces using clearly labelled sample data or verified public data where permitted. Use deterministic close times, immutable submitted predictions, transparent scoring rules and audit history. No staking or cash prizes.
 
 ### Phase 3 — CFG BET simulation shell
-Build non-monetary UI prototypes for Witiri/Multiplier, Capacity Rooms, Global Pools and Rollover using test-only tokens/points. The simulation must not accept deposits or produce withdrawable value. Publish rules and probability disclosures. No live betting or payment rails.
+Build non-monetary UI prototypes for Witiri/Multiplier, Binary / High-Low, Crash, Auto-Cashout, Capacity Rooms, Global Pools, Daily / Global Jackpot, Triple Accumulator, Rollover, Sports Betting, Virtual Sports, Esports Betting and Horse Racing using test-only tokens/points. The simulation must not accept deposits or produce withdrawable value. Publish rules and probability disclosures. No live betting or payment rails.
 
 ### Phase 4 — Independent gates
 Before any regulated product activation: legal review per country, licensing/partner approval, AML/KYC and age verification, responsible-gaming controls, independent RNG/fairness certification, liability and solvency modelling, segregated safeguarding accounts, security audit, incident response and regulator requirements.
@@ -100,6 +101,7 @@ Before any regulated product activation: legal review per country, licensing/par
 - No VPT internal denomination is displayed in the new CFG experience.
 - Demo points cannot be deposited, withdrawn, transferred, sold or converted into CFG.
 - PLAY and PREDICT have separate scoring records and transparent rules.
-- BET is visibly marked SIMULATION ONLY and has no payment or withdrawable balance path.
+- BET is visibly marked LOCKED / SIMULATION ONLY and has no payment or withdrawable balance path.
+- Games Hub links visibly distinguish CFG PLAY, CFG PREDICT and the disabled CFG BET catalogue; Horse Racing and Binary / High-Low appear in the CFG BET catalogue.
 - No database migration or production deployment occurs without separate approval.
 - Changes are delivered through pull requests; main remains untouched until review and explicit merge approval.
