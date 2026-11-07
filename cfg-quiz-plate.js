@@ -17,7 +17,7 @@
     for (let a=2;a<=20;a++) for(let b=2;b<=20;b++) bank.push({id:"div-"+(a*b)+"-"+b,category:"Division",difficulty:"Basic",question:(a*b)+" ÷ "+b+" = ?",answer:a});
     return bank;
   }
-  const baseBank=buildQuestionBank(), customQuestions=read(customKey,[]), bank=baseBank.concat(Array.isArray(customQuestions)?customQuestions:[]);
+  const baseBank=buildQuestionBank(), customQuestions=read(customKey,[]); let bank=baseBank.concat(Array.isArray(customQuestions)?customQuestions:[]);
   const state=read(storageKey,{points:0,attempts:[]});
   if(!Number.isFinite(state.points))state.points=0;if(!Array.isArray(state.attempts))state.attempts=[];
   const questionEl=$("#quizPotQuestion"),answersEl=$("#quizPotAnswers"),timerEl=$("#quizPotTimer"),progressEl=$("#quizPotProgress"),messageEl=$("#quizPotMessage"),scoreEl=$("#quizPotPoints"),startBtn=$("#quizPotStart"),resultEl=$("#quizPotResult"),historyEl=$("#quizPotHistory"),managerMessage=$("#quizManagerMessage");
@@ -51,8 +51,8 @@
   if(addForm)addForm.addEventListener("submit",event=>{event.preventDefault();const data=new FormData(addForm),prompt=String(data.get("question")||"").trim(),options=[1,2,3,4].map(n=>String(data.get("option"+n)||"").trim()),answerIndex=Number(data.get("correct"));
     if(!prompt||options.some(x=>!x)||![0,1,2,3].includes(answerIndex)){managerMessage.textContent="Jaza swali, majibu manne na jibu sahihi.";return;}
     if(options.some(x=>!Number.isFinite(Number(x)))){managerMessage.textContent="Kwa demo hili, majibu yawe namba.";return;}
-    const list=read(customKey,[]);list.push({id:"custom-"+Date.now(),category:"Custom",difficulty:"Basic",question:prompt,answer:Number(options[answerIndex])});write(customKey,list);
-    managerMessage.textContent="Swali limehifadhiwa kwenye kifaa hiki. Jumla ya maswali: "+(baseBank.length+list.length)+".";addForm.reset();});
+    const list=read(customKey,[]);const newQuestion={id:"custom-"+Date.now(),category:"Custom",difficulty:"Basic",question:prompt,answer:Number(options[answerIndex])};list.push(newQuestion);if(!write(customKey,list)){managerMessage.textContent="Hifadhi imeshindikana kwenye browser hii.";return;}bank.push(newQuestion);
+    managerMessage.textContent="Swali limehifadhiwa kwenye kifaa hiki. Jumla ya maswali: "+bank.length+".";const countEl=$("#quizBankCount"),managerCountEl=$("#quizManagerCount");if(countEl)countEl.textContent=String(bank.length);if(managerCountEl)managerCountEl.textContent=String(bank.length);addForm.reset();});
   const plateRows=[[1,"Normal","Haijapangiwa probability"],[2,"Normal","Haijapangiwa probability"],[3,"Normal","Haijapangiwa probability"],[4,"Small Win","Sehemu ya kundi la Winning 35%"],[5,"Fail","Sehemu ya kundi la Fail 63%"],[6,"Fail","Sehemu ya kundi la Fail 63%"],[7,"Normal","Haijapangiwa probability"],[8,"Normal","Haijapangiwa probability"],[9,"Big Win","Sehemu ya kundi la Winning 35%"],[10,"Fail","Fail 2%"],[11,"Normal","Haijapangiwa probability"],[12,"Normal","Haijapangiwa probability"],[13,"Fail","Sehemu ya kundi la Fail 63%"]];
   const plateList=$("#plateProbabilityList");
   if(plateList)plateRows.forEach(([number,outcome,note])=>{const row=document.createElement("div");row.className="plateProbabilityRow";const plate=document.createElement("strong");plate.textContent="Plate "+number;const label=document.createElement("span");label.textContent=outcome;const detail=document.createElement("small");detail.textContent=note;row.append(plate,label,detail);plateList.appendChild(row);});
