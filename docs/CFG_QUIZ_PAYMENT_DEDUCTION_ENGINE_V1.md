@@ -36,6 +36,95 @@ Quiz Points remain demo/game points. The existing reference of 1,000 Quiz Points
 - Custom/admin-submitted questions must be reviewed and approved before becoming available in an authoritative production bank.
 - Do not rely on browser localStorage as the authoritative production question bank or score record. Future production play requires server-side question storage, protected answer keys, server-authoritative timing/scoring, access controls, rate limits, anti-abuse controls and audit events.
 
+## 3A. Student learning categories and subject taxonomy
+
+The Student/Customer Select & Arrange mode must offer a structured subject catalogue. The following categories are the initial approved product direction; Admin may add or organize further subjects without changing the Free Quiz rules.
+
+### A. School subjects and foundational learning
+- Biology — Basic Biology, living organisms, cells, human body, plants, animals, ecology and introductory health science.
+- Civics — Basic Civics, citizenship, rights and responsibilities, community, public institutions and civic education.
+- General Science — basic scientific knowledge, scientific methods, physics, chemistry, earth and environmental science.
+- Mathematics — arithmetic, fractions, decimals, percentages, algebra, geometry, measurement and applied problem-solving.
+- Geography — physical geography, maps, climate, environment, population and human geography.
+- History — local, national, African and world history, with curriculum/level labels where applicable.
+
+### B. English language
+- English Basics.
+- Grammar and sentence structure.
+- Tenses.
+- Verbs and verb forms.
+- Parts of speech.
+- Vocabulary and spelling.
+- Reading comprehension.
+- Writing, punctuation and composition.
+- Literature — literary forms, poetry, prose, drama, themes and comprehension.
+
+### C. Kiswahili language
+- Kiswahili sanifu.
+- Msamiati.
+- Nahau.
+- Methali.
+- Vitendawili.
+- Sarufi na miundo ya sentensi.
+- Aina za maneno.
+- Fasihi — fasihi simulizi na fasihi andishi.
+- Ufahamu, kusoma na kuandika.
+
+### D. Other languages
+- Language learning categories can be added for French, Arabic and other supported languages.
+- Each language should have its own grammar, vocabulary, reading, writing, comprehension and literature subcategories as appropriate.
+- Do not mix question language and subject language accidentally; label both clearly.
+
+### E. Career, work and practical skills
+- Career Studies and career awareness.
+- Study skills, work readiness and professional skills.
+- Communication, teamwork, problem-solving and digital literacy.
+- Entrepreneurship and workplace knowledge.
+
+### F. Technical and vocational studies
+- Basic engineering and technology.
+- Electrical and electronics basics.
+- Mechanics and repair skills.
+- Construction and building trades.
+- ICT, computer fundamentals and digital skills.
+- Safety, tools, materials and practical workshop knowledge.
+
+### G. Agriculture and environment
+- Crop production and agronomy.
+- Soil, water and irrigation.
+- Seeds, seedlings and plant care.
+- Livestock and poultry.
+- Pests, diseases and crop protection.
+- Post-harvest handling, storage and value addition.
+- Agribusiness, agricultural markets and climate-smart agriculture.
+- Environmental conservation and natural resources.
+
+### H. Business and financial literacy
+- Business Studies basics.
+- Accounting and bookkeeping.
+- Marketing, sales and customer service.
+- Business planning and entrepreneurship.
+- Economics and trade basics.
+- Financial literacy, saving, budgeting and responsible money management.
+- Supply chain, logistics and cooperative business.
+
+### I. General knowledge and life skills
+- General knowledge and current everyday knowledge (with dated/versioned questions where facts may change).
+- Health and safety education using reviewed, age-appropriate educational content.
+- Environment, society, culture and community knowledge.
+- Practical problem-solving and everyday numeracy.
+
+### Taxonomy and learner experience requirements
+- Let learners browse by subject, category and subcategory before selecting questions.
+- Provide level/difficulty filters such as Beginner/Basic, Intermediate and Advanced; map school grade or curriculum level only when verified.
+- Allow the learner to select and arrange questions in their chosen order in Select & Arrange mode, subject to the approved selection limit.
+- Show the number of available approved questions in each category; do not offer a category as selectable if its approved bank is empty.
+- Support tags for language, subject, topic, level, curriculum/source, question format, review status and last-reviewed date.
+- Keep an automatic random question selection option for Power Quiz; do not force learners to manually select questions in that mode.
+- Keep the initial free Quiz flow unchanged. These categories enrich the question bank and paid learner mode; they do not alter the standard Free Quiz attempt.
+- Questions must be accurate, age/level appropriate, reviewed, and mapped to an identifiable syllabus or reliable learning reference where applicable. Flag curriculum-specific content by country and curriculum rather than presenting it as universal.
+- Avoid publishing sensitive or unsafe instructional content as casual quiz material; technical, health and safety questions require suitable review.
+
 ## 4. Quiz modes and future add-on catalogue
 
 The following are proposed product catalogue values for future configuration. They are not live charges.
