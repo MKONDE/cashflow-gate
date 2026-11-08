@@ -22,7 +22,7 @@ The existing standard Quiz attempt remains:
 - Timeout ends the attempt.
 - Questions are selected from the Quiz Question Bank.
 
-Paid add-ons must never silently rewrite these standard trial rules. A purchased time extension or additional-play entitlement is an explicit, separately displayed add-on. The standard trial remains available under its existing rules.
+Paid add-ons and paid modes must never silently rewrite these standard trial rules. The standard free trial remains available under its existing rules. Any paid mode with different session structure or timing must be clearly labelled as a separate mode with its own disclosed rules; it must not alter the standard trial.
 
 Quiz Points remain demo/game points. The existing reference of 1,000 Quiz Points = 0.5 CFG is not a conversion, wallet credit, withdrawal right, or payment balance.
 
@@ -31,29 +31,53 @@ Quiz Points remain demo/game points. The existing reference of 1,000 Quiz Points
 - Preserve the existing generated bank of more than 1,000 questions.
 - Design the bank to scale to 5,000–10,000 questions and beyond without changing the 10-question standard attempt rule.
 - Support categories, difficulty levels, question status, language, version, and duplicate detection.
-- Select a suitable 10-question subset for each attempt; a large bank does not mean 300 or 10,000 questions in one standard attempt.
+- Select a suitable 10-question subset for each standard attempt; a large bank does not mean 300 or 10,000 questions in one standard attempt.
 - Avoid repeated questions for a user where practical, while retaining a safe fallback when a category has insufficient approved questions.
 - Custom/admin-submitted questions must be reviewed and approved before becoming available in an authoritative production bank.
 - Do not rely on browser localStorage as the authoritative production question bank or score record. Future production play requires server-side question storage, protected answer keys, server-authoritative timing/scoring, access controls, rate limits, anti-abuse controls and audit events.
 
-## 4. Future add-on catalogue and agreed reference prices
+## 4. Quiz modes and future add-on catalogue
 
 The following are proposed product catalogue values for future configuration. They are not live charges.
+
+### 4.1 Standard Free Quiz
+- 10 questions per attempt.
+- 60 seconds total.
+- 2 points per correct answer; maximum 20.
+- Third incorrect answer ends the attempt; timeout ends the attempt.
+- Preserve the existing free/demo behavior.
+
+### 4.2 Power Quiz — 300-question package
+- Price starts at TSh 500 (reference CFG 0.2).
+- The customer purchases access to a package containing 300 questions.
+- Questions are presented automatically and randomly from the approved Question Bank; the customer does not need to manually select and arrange the questions in this mode.
+- The 300 questions are a package/question entitlement, not a change to the standard 10-question attempt. The package should be delivered in manageable quiz sessions/rounds; do not assume that all 300 questions must be answered in one sitting or one 60-second attempt.
+- Before implementation, the product owner must approve the package expiry, number of questions per round, timing per round, scoring, and whether the standard third-wrong-answer rule applies to each round or the package as a whole. Until then these settings remain configurable/unresolved.
+- Random selection must be server-authoritative in production and should minimize repeated questions within the purchased package where the approved bank allows.
+
+### 4.3 Student/Customer Select & Arrange Quiz — TSh 1,000
+- A separate, higher-priced mode at TSh 1,000 (reference CFG 0.4).
+- Gives the customer/student the freedom to choose questions from available approved categories/topics and arrange the selected questions in their preferred order before starting.
+- The customer/student then answers the arranged quiz within a clearly displayed time limit.
+- This is a distinct paid mode, not the automatic-random 300-question Power Quiz package.
+- Before implementation, approve the allowed selection count, whether difficulty/category filters apply, the time calculation, scoring, answer review behavior, and whether the standard third-wrong-answer rule applies. Do not silently alter the standard free-trial rules.
+- Selection must be limited to approved questions; correct answers must never be exposed before or during the attempt.
+
+### 4.4 Time extensions and daily play allowance
 
 | Add-on | Price reference | CFG reference |
 |---|---:|---:|
 | Add 30 seconds to an eligible attempt | TSh 500 | CFG 0.2 |
 | Add 1 minute to an eligible attempt | TSh 1,000 | CFG 0.4 |
-| Power Quiz | Starting at TSh 500 | Starting at CFG 0.2 |
+| Power Quiz — 300-question package | Starting at TSh 500 | Starting at CFG 0.2 |
+| Select & Arrange Quiz mode | TSh 1,000 | CFG 0.4 |
 | Increase daily play allowance | TSh 500 | CFG 0.2 |
 
 Agreed reference relationship: TSh 500 = USD 0.20 = CFG 0.2; therefore TSh 1,000 = USD 0.40 = CFG 0.4. Treat these as user-approved product reference values, not a general FX feed or authority to mint/convert CFG. Any exchange-rate, spread, fees, or country-specific pricing changes require separate approval and transparent display.
 
-Open product details that must remain configurable/unresolved until explicitly approved:
-- Power Quiz: confirm whether “300 questions” means a 300-question eligible pool/package or a set of 300 questions to be answered. It must not change the standard 10-question attempt by implication.
-- Daily play allowance: confirm that the TSh 500 add-on grants 200 additional plays per day, and define whether this is +200 or a multiplier. Do not implement a default assumption.
-- Define when an extension can be purchased/applied (before starting, during an active attempt, or both), whether multiple extensions can stack, and the maximum extension per attempt.
-- Define entitlement expiry, refunds/reversals, and whether unused entitlements carry forward.
+Daily play allowance detail remains unresolved: confirm whether the TSh 500 add-on grants 200 additional plays per day, and define whether this is +200 or a multiplier. Do not implement a default assumption.
+
+For time extensions, define when an extension can be purchased/applied (before starting, during an active attempt, or both), whether multiple extensions can stack, and the maximum extension per attempt. Entitlement expiry, refunds/reversals, and carry-forward rules also require approval.
 
 ## 5. Payment methods — CFG is the internal accounting unit
 
@@ -68,7 +92,7 @@ Important dependency: before Mobile Money can credit CFG, verify that an approve
 ## 6. Future deduction flow
 
 For an existing CFG balance:
-1. Display the selected add-on, exact CFG price, and any applicable conditions.
+1. Display the selected add-on/mode, exact CFG price, and all applicable conditions.
 2. Check authenticated user, available balance, entitlement eligibility and applicable limits.
 3. Obtain explicit confirmation.
 4. Submit a uniquely identified, idempotent debit request through the approved CFG ledger/payment service.
@@ -101,9 +125,11 @@ If any stage fails or is pending, do not issue the entitlement. Use an explicit 
 ## 8. Admin configuration
 
 Future Admin settings may configure:
-- Enable/disable each add-on independently.
+- Enable/disable each Quiz mode and add-on independently.
 - Price and price-rule version.
-- Eligible Quiz mode and application timing.
+- Question package size, session/round size, randomization and approved question categories.
+- Select & Arrange mode selection count, category/difficulty filters and time rules.
+- Time extension eligibility, stacking and limits.
 - Daily entitlement limits and stacking rules.
 - Supported payment methods and country availability.
 - Entitlement duration, refund/reversal policy and operational limits.
@@ -118,18 +144,19 @@ For the current PR #11 demo:
 - Do not deduct CFG or Mobile Money.
 - Do not connect a real wallet or payment provider.
 - Do not create or alter database schemas, Supabase configuration, CFG ledger, Treasury, Reserve or Issuance.
-- Do not change the existing 10-question, 60-second, 2-points-per-correct, third-wrong-answer and timeout rules.
+- Do not change the existing standard 10-question, 60-second, 2-points-per-correct, third-wrong-answer and timeout rules.
 - Do not merge PR #11 or deploy to production without separate explicit approval.
 
 ## 10. Future acceptance gates
 
 Before implementation or activation, require separate approval for:
-1. Confirmed Power Quiz 300-question meaning.
-2. Confirmed daily +200 plays entitlement semantics.
-3. Approved CFG on-ramp availability and ledger posting rules for Mobile Money.
-4. Approved payment-provider contracts, callback verification and reconciliation.
-5. Server-authoritative Quiz/question/score/entitlement services.
-6. Security, abuse, refund, consumer disclosure and applicable legal/compliance review.
-7. Test evidence for idempotency, duplicate callbacks, failed/pending payments, reversals and ledger reconciliation.
+1. Power Quiz package expiry, round/session size, timing, scoring and wrong-answer handling.
+2. Select & Arrange mode question count, timing, scoring and wrong-answer handling.
+3. Daily +200 plays entitlement semantics.
+4. Approved CFG on-ramp availability and ledger posting rules for Mobile Money.
+5. Approved payment-provider contracts, callback verification and reconciliation.
+6. Server-authoritative Quiz/question/score/entitlement services.
+7. Security, abuse, refund, consumer disclosure and applicable legal/compliance review.
+8. Test evidence for idempotency, duplicate callbacks, failed/pending payments, reversals and ledger reconciliation.
 
 This specification is a planning artifact only. It does not authorize any live financial operation.
