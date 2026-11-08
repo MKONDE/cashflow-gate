@@ -125,6 +125,48 @@ The Student/Customer Select & Arrange mode must offer a structured subject catal
 - Questions must be accurate, age/level appropriate, reviewed, and mapped to an identifiable syllabus or reliable learning reference where applicable. Flag curriculum-specific content by country and curriculum rather than presenting it as universal.
 - Avoid publishing sensitive or unsafe instructional content as casual quiz material; technical, health and safety questions require suitable review.
 
+## 3B. CFG QUIZ AI Learning & Operations Assistant
+
+Add an AI-assisted learning and Quiz operations capability as an additive module. It must support learners and authorized administrators without replacing the approved Question Bank, scoring engine, payment ledger, or human review controls.
+
+### Learner-facing AI capabilities
+- AI Study Tutor: explain approved subject concepts in age- and level-appropriate language.
+- AI Question Assistant: generate practice questions from an explicitly selected subject, topic, language and difficulty, including multiple-choice, short-answer and worked-problem formats where supported.
+- AI Answer Explainer: after an answer is submitted, explain why the answer is correct or incorrect and show a step-by-step explanation when appropriate.
+- AI Practice Coach: identify learning gaps from a learner's permitted Quiz history and recommend relevant topics and practice activities.
+- AI Language Support: assist with English, Kiswahili and additional supported languages; preserve subject-specific terminology and allow the learner to choose the response language.
+- AI Revision Assistant: create revision sets and summaries from approved learning materials or curriculum sources that the platform is authorized to use.
+- AI Ask & Answer: allow learners to ask questions about a topic and receive educational explanations. Clearly distinguish sourced facts from generated explanations and advise learners when a response needs teacher verification.
+
+### Admin and operations capabilities
+- AI Question Drafting: propose new questions, answer options, correct answers, explanations, hints, difficulty and subject tags.
+- AI Categorization: suggest subject, topic, subtopic, language, level and curriculum tags for review.
+- AI Quality Checks: flag duplicate, ambiguous, incomplete, inconsistent or potentially incorrect questions and answer keys.
+- AI Bank Maintenance: identify coverage gaps and propose additions; do not autonomously publish questions to the authoritative bank.
+- AI Quiz Assembly: recommend balanced question sets based on approved categories and difficulty settings. Respect the selected mode: random Power Quiz or learner-selected Select & Arrange.
+- AI Performance Reports: summarize aggregate learner progress and common knowledge gaps using authorized, privacy-minimized data.
+- AI Admin Assistant: help authorized staff review content, manage categories and inspect operational issues. All privileged actions require human authorization and audit logging.
+
+### Trust, accuracy and safeguarding
+- AI-generated questions, answer keys and explanations are drafts until validated against approved sources and reviewed under the configured quality workflow.
+- Never let AI directly change a learner's score, debit CFG, grant paid entitlements, change prices, alter payment rules, or modify the financial ledger.
+- Do not expose answer keys during an active assessment or leak answers through hints, chat context, generated explanations or browser payloads.
+- Clearly label AI-generated content and provide a report/flag mechanism for learners and teachers.
+- Use role-based access, age-appropriate safeguards, rate limits, abuse prevention, privacy minimization and auditable administrative actions.
+- Do not use private learner data to train or fine-tune models without a separately approved lawful basis and explicit governance.
+- Provide a human review/appeal path for disputed questions, answers or AI explanations.
+- Where AI is uncertain, source material is missing, or curricula differ by country, it must say so rather than invent an answer. Show source references where available.
+- Do not present AI explanations as a substitute for qualified teachers, especially for safety-critical vocational, health or technical instructions.
+
+### Technical architecture and boundaries
+- Implement AI as a separate Quiz AI service/module behind a controlled server-side API; do not put provider secrets or privileged keys in browser code.
+- Keep the approved Question Bank and authoritative assessment/scoring service as the source of truth.
+- Separate AI-generated draft content from reviewed/approved bank content using explicit statuses and version history.
+- Log model/version, request purpose, source references where available, reviewer decision and timestamps for generated bank content, subject to privacy controls.
+- Apply quotas and configurable usage limits. Any future paid AI usage or premium AI features require separate product/pricing approval and must not be silently charged.
+- AI features must degrade safely when the model/provider is unavailable; core Free Quiz must continue to work without AI.
+- Do not add database migrations, external AI-provider integrations, model subscriptions or production AI activation in the current documentation-only scope without separate authorization.
+
 ## 4. Quiz modes and future add-on catalogue
 
 The following are proposed product catalogue values for future configuration. They are not live charges.
