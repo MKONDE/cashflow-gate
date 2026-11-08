@@ -32,7 +32,7 @@ export default async function handler(req,res){
       })
     });
     const data=await upstream.json().catch(()=>({}));
-    if(!upstream.ok){console.error("CFG AI Gateway error",upstream.status,data.error?.code||"upstream_error");return json(res,502,{error:"Huduma ya AI imeshindwa kujibu kwa sasa. Jaribu tena baadaye."});}
+    if(!upstream.ok){const gatewayError=data?.error||data;const gatewayCode=String(gatewayError?.code||gatewayError?.type||"unknown").slice(0,100);const gatewayMessage=String(gatewayError?.message||gatewayError?.detail||"").slice(0,500);const requestId=String(upstream.headers.get("x-request-id")||upstream.headers.get("x-vercel-id")||"").slice(0,160);console.error("CFG AI Gateway rejected request",JSON.stringify({status:upstream.status,code:gatewayCode,message:gatewayMessage,requestId,model:process.env.CFG_AI_MODEL||"openai/gpt-5.4-mini"}));const publicError=upstream.status===403?"Vercel AI Gateway imekataa ombi. Hakiki API Key, ruhusa za team, salio/billing na upatikanaji wa model kwenye AI Gateway.": "Huduma ya AI imeshindwa kujibu kwa sasa. Jaribu tena baadaye.";return json(res,502,{error:publicError,requestId:requestId||undefined});}
     const answer=data.choices?.[0]?.message?.content;
     if(typeof answer!=="string"||!answer.trim())return json(res,502,{error:"AI haikurudisha jibu. Tafadhali jaribu tena."});
     return json(res,200,{answer:answer.trim()});
