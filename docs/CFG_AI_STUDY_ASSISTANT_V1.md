@@ -6,7 +6,7 @@ Implementation is additive and isolated to the CFG Quiz Study Assistant. Existin
 ## Runtime
 - Browser calls same-origin `POST /api/cfg-quiz-assistant`.
 - Vercel Node serverless function calls the Vercel AI Gateway OpenAI-compatible Chat Completions endpoint.
-- Default model: `openai/gpt-5.4-mini`; can be overridden with `CFG_AI_MODEL`.
+- Default model: `nvidia/nemotron-3.5-lightning-free` (free-tier model listing at time of implementation); can be overridden with `CFG_AI_MODEL`.
 - Secret `AI_GATEWAY_API_KEY` is read only on the server. Never put it in HTML, JavaScript, Git, or browser storage.
 - Inputs are limited to an approved subject, 600 question characters, and two tasks: ask or practice-question generation.
 - Output capped at 650 tokens; request timeout 25 seconds; best-effort per-instance limit 8 requests/IP/minute.
@@ -17,6 +17,7 @@ Add `AI_GATEWAY_API_KEY` as a Secret Environment Variable for the CFG project in
 
 ## Important limitations before production
 - The in-memory rate limiter is best-effort only and is not a distributed abuse-control system. Add durable rate limiting, monitoring, and a hard spend budget before broad public release.
+- A free-listed model may still require valid team-level AI Gateway access and any billing/payment-method prerequisites imposed by Vercel. If 403 persists, inspect the sanitized Gateway error and request ID; do not assume changing code can resolve an account entitlement or billing restriction.
 - Review Vercel AI Gateway/provider privacy, data-retention, billing and regional terms before using with minors or sensitive student information.
 - AI responses can be wrong; teacher review and curriculum-aligned evaluation are required.
 - This integration is a preview implementation, not authorization to merge, deploy to production, introduce payments, or change CFG financial logic.
