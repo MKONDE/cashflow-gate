@@ -263,7 +263,7 @@ begin
   order by a.attempt_number desc
   limit 1;
 
-  return last_outcome in ('PRE_DISPATCH_FAILURE','DECLINED_FINAL')
+  return coalesce(last_outcome in ('PRE_DISPATCH_FAILURE','DECLINED_FINAL'), false)
     and not exists (
       select 1 from public.cfg_payment_attempts a
       where a.payment_intent_id = p_payment_intent_id
@@ -280,6 +280,26 @@ grant execute on function public.cfg_list_payment_route_candidates(char, text, c
   to service_role;
 grant execute on function public.cfg_payment_fallback_is_safe(uuid)
   to service_role;
+
+create or replace function public.cfg_reject_payment_attempt_mutation()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $
+begin
+  raise exception 'Payment attempt records are append-only; record a new attempt or reconciliation event'
+    using errcode = '55000';
+end;
+$;
+
+drop trigger if exists cfg_payment_attempts_append_only on public.cfg_payment_attempts;
+create trigger cfg_payment_attempts_append_only
+before update or delete on public.cfg_payment_attempts
+for each row execute function public.cfg_reject_payment_attempt_mutation();
+
+revoke all on function public.cfg_reject_payment_attempt_mutation()
+  from public, anon, authenticated, service_role;
 
 comment on table public.cfg_country_compliance_requirements is
   'Country-scoped, evidence-backed regulatory requirements. A VERIFIED status requires evidence, verifier and timestamp; expired evidence blocks sandbox route preview.';
