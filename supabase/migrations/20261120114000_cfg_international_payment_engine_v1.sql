@@ -320,7 +320,7 @@ begin
       raise exception 'Payment cannot succeed before its ledger journal is POSTED'
         using errcode = '23514';
     end if;
-    if ledger_type <> case when new.direction='INBOUND' then 'DEPOSIT' else 'WITHDRAWAL' end
+    if ledger_type is distinct from (case when new.direction='INBOUND' then 'DEPOSIT' else 'WITHDRAWAL' end)
        or ledger_country is distinct from new.country_code then
       raise exception 'Payment ledger journal type or country does not match intent'
         using errcode = '23514';
