@@ -409,6 +409,14 @@ begin
       raise exception 'Fallback blocked: previous provider outcome is not a definitive no-charge result'
         using errcode = '55000';
     end if;
+    if exists (
+      select 1 from public.cfg_payment_attempts prior
+      where prior.payment_intent_id = new.payment_intent_id
+        and prior.provider_id = new.provider_id
+    ) then
+      raise exception 'Fallback must select a different eligible provider'
+        using errcode = '55000';
+    end if;
   end if;
 
   return new;
