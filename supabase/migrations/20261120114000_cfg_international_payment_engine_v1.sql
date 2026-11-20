@@ -315,7 +315,7 @@ begin
     from public.cfg_ledger_transactions t
     where t.id = new.ledger_transaction_id;
 
-    if ledger_status <> 'POSTED' then
+    if ledger_status is distinct from 'POSTED' then
       raise exception 'Payment cannot succeed before its ledger journal is POSTED'
         using errcode = '23514';
     end if;
