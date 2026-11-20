@@ -54,6 +54,20 @@ begin
 
   if not exists (
     select 1 from pg_trigger
+    where tgname='cfg_payment_intent_terms_immutable' and not tgisinternal
+  ) then
+    raise exception 'Payment intent identity and terms must be immutable';
+  end if;
+
+  if not exists (
+    select 1 from pg_trigger
+    where tgname='cfg_payment_attempt_insert_guard' and not tgisinternal
+  ) then
+    raise exception 'Provider attempt insert must enforce sequential safe fallback';
+  end if;
+
+  if not exists (
+    select 1 from pg_trigger
     where tgname='cfg_payment_success_guard' and not tgisinternal
   ) then
     raise exception 'Payment success must require a verified settlement event and posted ledger journal';
