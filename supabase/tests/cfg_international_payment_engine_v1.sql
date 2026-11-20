@@ -54,6 +54,13 @@ begin
 
   if not exists (
     select 1 from pg_trigger
+    where tgname='cfg_payment_success_guard' and not tgisinternal
+  ) then
+    raise exception 'Payment success must require a verified settlement event and posted ledger journal';
+  end if;
+
+  if not exists (
+    select 1 from pg_trigger
     where tgname='cfg_payment_attempts_append_only' and not tgisinternal
   ) then
     raise exception 'Payment attempts must be append-only';
