@@ -89,3 +89,5 @@ jobs:
           done
           echo "Running transactional Treasury integration tests"
           psql -v ON_ERROR_STOP=1 -f supabase/tests/cfg_treasury_transactional_integration_v1.sql
+          echo "Running transactional payment integration tests"
+          psql -v ON_ERROR_STOP=1 -f supabase/tests/cfg_payment_transactional_integration_v1.sql
