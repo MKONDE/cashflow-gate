@@ -289,6 +289,128 @@ grant execute on function public.cfg_list_payment_route_candidates(char, text, c
 grant execute on function public.cfg_payment_fallback_is_safe(uuid)
   to service_role;
 
+
+-- Payment terms are immutable once created; successful/cancelled intents are terminal.
+create or replace function public.cfg_guard_payment_intent_terms()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $
+begin
+  if tg_op = 'DELETE' then
+    raise exception 'Payment intents are retained for audit and cannot be deleted'
+      using errcode = '55000';
+  end if;
+  if old.status in ('SUCCEEDED','CANCELLED') then
+    raise exception 'Terminal payment intents are immutable'
+      using errcode = '55000';
+  end if;
+  if new.payment_reference is distinct from old.payment_reference
+     or new.idempotency_key is distinct from old.idempotency_key
+     or new.country_code is distinct from old.country_code
+     or new.cfg_wallet_id is distinct from old.cfg_wallet_id
+     or new.direction is distinct from old.direction
+     or new.rail_code is distinct from old.rail_code
+     or new.currency_code is distinct from old.currency_code
+     or new.amount is distinct from old.amount
+     or new.request_fingerprint is distinct from old.request_fingerprint
+     or new.created_by is distinct from old.created_by
+     or new.created_at is distinct from old.created_at
+     or new.expires_at is distinct from old.expires_at
+     or new.metadata is distinct from old.metadata then
+    raise exception 'Payment intent terms and idempotency identity are immutable'
+      using errcode = '23514';
+  end if;
+  return new;
+end;
+$;
+
+drop trigger if exists cfg_payment_intent_terms_immutable on public.cfg_payment_intents;
+create trigger cfg_payment_intent_terms_immutable
+before update or delete on public.cfg_payment_intents
+for each row execute function public.cfg_guard_payment_intent_terms();
+
+revoke all on function public.cfg_guard_payment_intent_terms()
+  from public, anon, authenticated, service_role;
+
+-- Provider attempts are accepted only for the same intent, same idempotency key,
+-- eligible sandbox provider, and a strictly safe sequential fallback state.
+create or replace function public.cfg_guard_payment_attempt_insert()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $
+declare
+  intent_row record;
+  provider_row record;
+  prior_outcome text;
+  expected_attempt integer;
+begin
+  select i.* into intent_row
+  from public.cfg_payment_intents i
+  where i.id = new.payment_intent_id
+  for update;
+  if not found then
+    raise exception 'Payment intent not found' using errcode = '23503';
+  end if;
+
+  select p.* into provider_row
+  from public.cfg_payment_provider_registry p
+  where p.id = new.provider_id;
+  if not found
+     or provider_row.is_enabled is distinct from true
+     or provider_row.environment <> 'SANDBOX'
+     or provider_row.sandbox_only is distinct from true
+     or provider_row.supports_idempotency is distinct from true
+     or provider_row.supports_status_lookup is distinct from true
+     or provider_row.country_code is distinct from intent_row.country_code
+     or provider_row.rail_code is distinct from intent_row.rail_code
+     or provider_row.currency_code is distinct from intent_row.currency_code
+     or provider_row.direction not in (intent_row.direction,'BOTH') then
+    raise exception 'Provider is not eligible for this sandbox payment intent'
+      using errcode = '23514';
+  end if;
+
+  if new.request_idempotency_key is distinct from intent_row.idempotency_key then
+    raise exception 'Every provider attempt must reuse the payment intent idempotency key'
+      using errcode = '23514';
+  end if;
+
+  select coalesce(max(a.attempt_number),0) + 1
+    into expected_attempt
+  from public.cfg_payment_attempts a
+  where a.payment_intent_id = new.payment_intent_id;
+  if new.attempt_number <> expected_attempt then
+    raise exception 'Provider attempts must be strictly sequential'
+      using errcode = '23514';
+  end if;
+
+  if expected_attempt > 1 then
+    select a.outcome into prior_outcome
+    from public.cfg_payment_attempts a
+    where a.payment_intent_id = new.payment_intent_id
+    order by a.attempt_number desc
+    limit 1;
+    if prior_outcome not in ('PRE_DISPATCH_FAILURE','DECLINED_FINAL') then
+      raise exception 'Fallback blocked: previous provider outcome is not a definitive no-charge result'
+        using errcode = '55000';
+    end if;
+  end if;
+
+  return new;
+end;
+$;
+
+drop trigger if exists cfg_payment_attempt_insert_guard on public.cfg_payment_attempts;
+create trigger cfg_payment_attempt_insert_guard
+before insert on public.cfg_payment_attempts
+for each row execute function public.cfg_guard_payment_attempt_insert();
+
+revoke all on function public.cfg_guard_payment_attempt_insert()
+  from public, anon, authenticated, service_role;
+
 -- A payment intent cannot be marked successful unless the provider settlement is
 -- represented by a verified, processed webhook and a posted, matching CFG ledger journal.
 create or replace function public.cfg_guard_payment_success()
