@@ -50,6 +50,16 @@ insert into public.cfg_payment_provider_registry(
   10,'SANDBOX',true,true,true,true,'CFG_TEST_PROVIDER_SECRET'
 );
 
+insert into public.cfg_payment_provider_registry(
+  id,provider_code,display_name,country_code,rail_code,currency_code,direction,
+  priority,environment,is_enabled,sandbox_only,supports_idempotency,
+  supports_status_lookup,credential_secret_name
+) values (
+  '20000000-0000-0000-0000-000000000007',
+  'CI_SANDBOX_BACKUP','CI Sandbox Backup Provider','TZ','TEST_BANK','TZS','INBOUND',
+  20,'SANDBOX',true,true,true,true,'CFG_TEST_BACKUP_SECRET'
+);
+
 insert into public.cfg_payment_intents(
   id,payment_reference,idempotency_key,country_code,cfg_wallet_id,direction,
   rail_code,currency_code,amount,status,request_fingerprint,created_by
@@ -93,7 +103,7 @@ insert into public.cfg_payment_attempts(
 ) values (
   '20000000-0000-0000-0000-000000000006',
   '20000000-0000-0000-0000-000000000004',
-  '20000000-0000-0000-0000-000000000003',
+  '20000000-0000-0000-0000-000000000007',
   2,'AMBIGUOUS','CI-PAYMENT-IDEMPOTENCY-001'
 );
 
