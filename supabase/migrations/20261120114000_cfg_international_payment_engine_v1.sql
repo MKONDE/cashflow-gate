@@ -373,6 +373,18 @@ begin
       using errcode = '23514';
   end if;
 
+  if not exists (
+    select 1
+    from public.cfg_list_payment_route_candidates(
+      intent_row.country_code, intent_row.rail_code,
+      intent_row.currency_code, intent_row.direction
+    ) eligible
+    where eligible.provider_id = new.provider_id
+  ) then
+    raise exception 'Provider is not in the approved country compliance route for this sandbox intent'
+      using errcode = '23514';
+  end if;
+
   if new.request_idempotency_key is distinct from intent_row.idempotency_key then
     raise exception 'Every provider attempt must reuse the payment intent idempotency key'
       using errcode = '23514';
