@@ -43,7 +43,7 @@ The fallback safety predicate permits a next provider only after:
 - A failure before the request was dispatched; or
 - A provider adapter has positively classified the response as a final decline with no charge accepted.
 
-It blocks fallback after a timeout, connection loss after dispatch, accepted/pending response, ambiguous status, or settlement. The same payment intent and idempotency key must be retained across any approved retry. A status lookup/reconciliation is required before retrying an ambiguous payment.
+It blocks fallback after a timeout, connection loss after dispatch, accepted/pending response, ambiguous status, or settlement. The same payment intent and idempotency key must be retained across any approved retry. Database triggers enforce sequential attempts, provider capability checks, matching intent identity, and the country-compliance sandbox route. A status lookup/reconciliation is required before retrying an ambiguous payment. Payment intent terms are immutable and terminal successful/cancelled intents cannot be changed or deleted.
 
 The Deno helper tests cover the fallback classifications and deterministic priority ordering. No provider has been contacted by this feature.
 
@@ -63,7 +63,7 @@ Sandbox route preview returns only providers configured for an `INTERNAL_TEST` c
 
 `supabase/functions/cfg-payment-route-preview/index.ts` is an authenticated, verified-email, Treasury-role-only route preview. It validates a small request schema, uses the server-side service role, and returns ordered sandbox candidates only.
 
-It does not create payment intents, call provider endpoints, initiate deposits or withdrawals, mark transactions successful, post ledger entries, or move money. JWT verification must remain enabled when deployed.
+It does not create payment intents, call provider endpoints, initiate deposits or withdrawals, mark transactions successful, post ledger entries, or move money. JWT verification must remain enabled when deployed. Configure `CFG_ALLOWED_ORIGINS` with the exact approved application origins; leave the function undeployed until the origin list and role assignments are reviewed.
 
 ## Files added or updated
 
