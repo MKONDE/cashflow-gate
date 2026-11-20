@@ -78,6 +78,7 @@ create table if not exists public.cfg_payment_provider_registry (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check (environment <> 'LIVE' or sandbox_only = false),
+  check (environment <> 'LIVE' or is_enabled = false),
   check (not is_enabled or
     (supports_idempotency = true and supports_status_lookup = true and credential_secret_name is not null))
 );
