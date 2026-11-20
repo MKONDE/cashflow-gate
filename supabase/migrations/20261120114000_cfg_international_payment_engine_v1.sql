@@ -89,7 +89,7 @@ create table if not exists public.cfg_payment_intents (
   payment_reference text not null unique,
   idempotency_key text not null unique,
   country_code char(2) not null references public.cfg_countries(country_code) on delete restrict,
-  cfg_wallet_id uuid references public.cfg_wallets(id) on delete restrict,
+  cfg_wallet_id uuid not null references public.cfg_wallets(id) on delete restrict,
   direction text not null check (direction in ('INBOUND','OUTBOUND')),
   rail_code text not null check (rail_code ~ '^[A-Z][A-Z0-9_]{1,31}$'),
   currency_code char(3) not null references public.cfg_currencies(currency_code),
@@ -106,7 +106,7 @@ create table if not exists public.cfg_payment_intents (
   updated_at timestamptz not null default now(),
   expires_at timestamptz,
   metadata jsonb not null default '{}'::jsonb check (jsonb_typeof(metadata) = 'object'),
-  check (status <> 'SUCCEEDED' or ledger_transaction_id is not null)
+  check (status <> 'SUCCEEDED' or (ledger_transaction_id is not null and selected_provider_id is not null and provider_reference is not null))
 );
 create index if not exists cfg_payment_intents_status_idx
   on public.cfg_payment_intents(country_code, status, created_at desc);
@@ -202,6 +202,7 @@ begin
    and pol.direction in (p_direction, 'BOTH')
    and pol.enabled = true
    and pol.approved_at is not null
+   and pol.effective_from <= now()
    and (pol.effective_until is null or pol.effective_until > now())
   join public.cfg_countries c on c.country_code = p.country_code
   join public.cfg_platform_control pc on pc.singleton_id = 1
@@ -218,6 +219,12 @@ begin
     and c.real_money_enabled = false
     and pc.operational_state = 'INTERNAL_TEST'
     and pc.real_money_enabled = false
+    and exists (
+      select 1 from public.cfg_country_compliance_requirements required_rule
+      where required_rule.country_code = c.country_code
+        and required_rule.mandatory = true
+        and required_rule.required_for in ('ALL', case when p_direction='INBOUND' then 'DEPOSIT' else 'WITHDRAWAL' end)
+    )
     and not exists (
       select 1 from public.cfg_country_compliance_requirements r
       where r.country_code = c.country_code
@@ -280,6 +287,82 @@ grant execute on function public.cfg_list_payment_route_candidates(char, text, c
   to service_role;
 grant execute on function public.cfg_payment_fallback_is_safe(uuid)
   to service_role;
+
+-- A payment intent cannot be marked successful unless the provider settlement is
+-- represented by a verified, processed webhook and a posted, matching CFG ledger journal.
+create or replace function public.cfg_guard_payment_success()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $
+declare
+  ledger_status text;
+  ledger_type text;
+  ledger_country char(2);
+  wallet_leg_total numeric(30,8);
+  required_direction text;
+begin
+  if new.status = 'SUCCEEDED' and (tg_op = 'INSERT' or old.status is distinct from 'SUCCEEDED') then
+    if new.ledger_transaction_id is null or new.selected_provider_id is null
+       or new.provider_reference is null then
+      raise exception 'Successful payment requires provider reference and posted ledger journal'
+        using errcode = '23514';
+    end if;
+
+    select t.status, t.transaction_type, t.country_code
+      into ledger_status, ledger_type, ledger_country
+    from public.cfg_ledger_transactions t
+    where t.id = new.ledger_transaction_id;
+
+    if ledger_status <> 'POSTED' then
+      raise exception 'Payment cannot succeed before its ledger journal is POSTED'
+        using errcode = '23514';
+    end if;
+    if ledger_type <> case when new.direction='INBOUND' then 'DEPOSIT' else 'WITHDRAWAL' end
+       or ledger_country is distinct from new.country_code then
+      raise exception 'Payment ledger journal type or country does not match intent'
+        using errcode = '23514';
+    end if;
+
+    required_direction := case when new.direction='INBOUND' then 'CREDIT' else 'DEBIT' end;
+    select coalesce(sum(e.amount),0) into wallet_leg_total
+    from public.cfg_ledger_entries e
+    join public.cfg_ledger_accounts a on a.id=e.account_id
+    where e.transaction_id = new.ledger_transaction_id
+      and a.cfg_wallet_id = new.cfg_wallet_id
+      and e.currency_code = new.currency_code
+      and e.direction = required_direction;
+
+    if wallet_leg_total <> new.amount then
+      raise exception 'Payment ledger wallet leg must exactly match intent amount and currency'
+        using errcode = '23514';
+    end if;
+
+    if not exists (
+      select 1 from public.cfg_payment_webhook_events w
+      where w.provider_id = new.selected_provider_id
+        and w.provider_reference = new.provider_reference
+        and w.signature_verified = true
+        and w.processing_status = 'PROCESSED'
+        and w.event_type in ('PAYMENT_SETTLED','PAYOUT_SETTLED')
+    ) then
+      raise exception 'Payment cannot succeed without a verified and processed provider settlement event'
+        using errcode = '23514';
+    end if;
+  end if;
+  return new;
+end;
+$;
+
+drop trigger if exists cfg_payment_success_guard on public.cfg_payment_intents;
+create trigger cfg_payment_success_guard
+before insert or update of status, ledger_transaction_id, selected_provider_id, provider_reference
+on public.cfg_payment_intents
+for each row execute function public.cfg_guard_payment_success();
+
+revoke all on function public.cfg_guard_payment_success()
+  from public, anon, authenticated, service_role;
 
 create or replace function public.cfg_reject_payment_attempt_mutation()
 returns trigger
