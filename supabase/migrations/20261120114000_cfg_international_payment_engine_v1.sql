@@ -296,7 +296,7 @@ returns trigger
 language plpgsql
 security invoker
 set search_path = ''
-as $
+as $$
 begin
   if tg_op = 'DELETE' then
     raise exception 'Payment intents are retained for audit and cannot be deleted'
@@ -324,7 +324,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists cfg_payment_intent_terms_immutable on public.cfg_payment_intents;
 create trigger cfg_payment_intent_terms_immutable
@@ -341,7 +341,7 @@ returns trigger
 language plpgsql
 security invoker
 set search_path = ''
-as $
+as $$
 declare
   intent_row record;
   provider_row record;
@@ -413,7 +413,7 @@ begin
 
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists cfg_payment_attempt_insert_guard on public.cfg_payment_attempts;
 create trigger cfg_payment_attempt_insert_guard
