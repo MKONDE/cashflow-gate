@@ -295,7 +295,7 @@ returns trigger
 language plpgsql
 security invoker
 set search_path = ''
-as $
+as $$
 declare
   ledger_status text;
   ledger_type text;
@@ -353,7 +353,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists cfg_payment_success_guard on public.cfg_payment_intents;
 create trigger cfg_payment_success_guard
@@ -369,12 +369,12 @@ returns trigger
 language plpgsql
 security invoker
 set search_path = ''
-as $
+as $$
 begin
   raise exception 'Payment attempt records are append-only; record a new attempt or reconciliation event'
     using errcode = '55000';
 end;
-$;
+$$;
 
 drop trigger if exists cfg_payment_attempts_append_only on public.cfg_payment_attempts;
 create trigger cfg_payment_attempts_append_only
