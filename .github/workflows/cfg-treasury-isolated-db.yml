@@ -4,10 +4,12 @@ on:
   pull_request:
     branches:
       - feat/cfg-international-foundation-v1
+      - feat/cfg-treasury-engine-implementation-v1
       - main
   push:
     branches:
       - feat/cfg-treasury-engine-implementation-v1
+      - feature/cfg-international-payment-engine-v1
 
 permissions:
   contents: read
@@ -41,14 +43,18 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Test Treasury Edge Function helpers
-        run: deno test supabase/functions/cfg-treasury-read/index_test.ts
+      - name: Test Treasury and payment Edge Function helpers
+        run: |
+          deno test supabase/functions/cfg-treasury-read/index_test.ts
+          deno test supabase/functions/_shared/payment_fallback_test.ts
       - name: Type-check Treasury read Edge Function
         run: deno check supabase/functions/cfg-treasury-read/index.ts
       - name: Test CFG issuance action validation
         run: deno test supabase/functions/cfg-issuance-action/index_test.ts
       - name: Type-check CFG issuance action Edge Function
         run: deno check supabase/functions/cfg-issuance-action/index.ts
+      - name: Type-check payment route preview Edge Function
+        run: deno check supabase/functions/cfg-payment-route-preview/index.ts
       - name: Bootstrap disposable Supabase auth roles
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fixtures/cfg_treasury_auth_bootstrap.sql
       - name: Apply Treasury migrations in dependency order
@@ -61,7 +67,8 @@ jobs:
             supabase/migrations/20261102120000_cfg_reserve_reconciliation_v1.sql \
             supabase/migrations/20261102130000_cfg_issuance_supply_control_v1.sql \
             supabase/migrations/20261102140000_cfg_treasury_security_audit_hardening_v1.sql \
-            supabase/migrations/20261102150000_cfg_issuance_reservation_expiry_v1.sql
+            supabase/migrations/20261102150000_cfg_issuance_reservation_expiry_v1.sql \\
+            supabase/migrations/20261120114000_cfg_international_payment_engine_v1.sql
           do
             echo "Applying $migration"
             psql -v ON_ERROR_STOP=1 -f "$migration"
@@ -74,7 +81,8 @@ jobs:
             supabase/tests/cfg_ledger_integrity_v1.sql \
             supabase/tests/cfg_reserve_reconciliation_v1.sql \
             supabase/tests/cfg_issuance_supply_control_v1.sql \
-            supabase/tests/cfg_treasury_security_audit_hardening_v1.sql
+            supabase/tests/cfg_treasury_security_audit_hardening_v1.sql \\
+            supabase/tests/cfg_international_payment_engine_v1.sql
           do
             echo "Running $test_file"
             psql -v ON_ERROR_STOP=1 -f "$test_file"
